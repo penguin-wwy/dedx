@@ -1,0 +1,9 @@
+/target
+**/*.rs.bk
+Cargo.lock
+.idea
+cmake-build-debug
+*.class
+*.log
+build/
+.gradle/
