@@ -5,6 +5,8 @@ import java.lang.RuntimeException
 class TypeBox private constructor(val type: Any) {
 
     companion object {
+        fun create(type: ObjectType) = TypeBox(type)
+
         fun create(typeName: String) = when (typeName[0]) {
             'L' -> TypeBox(getType(BasicType.OBJECT, typeName) ?: throw RuntimeException("unknown type $typeName"))
             '[' -> TypeBox(getType(BasicType.ARRAY, typeName) ?: throw RuntimeException("unknown type $typeName"))
@@ -48,5 +50,21 @@ class TypeBox private constructor(val type: Any) {
     fun getAsArrayType() = when (type is ArrayType) {
         true -> type
         false -> null
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null || other !is TypeBox) {
+            return false
+        }
+        if (getAsBasicType() != null) {
+            return getAsBasicType() == other.getAsBasicType()
+        }
+        if (getAsObjectType() != null) {
+            return getAsObjectType() == other.getAsObjectType()
+        }
+        if (getAsArrayType() != null) {
+            return getAsArrayType() == other.getAsArrayType()
+        }
+        return false
     }
 }

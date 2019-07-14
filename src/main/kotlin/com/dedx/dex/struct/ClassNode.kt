@@ -2,13 +2,17 @@ package com.dedx.dex.struct
 
 import com.android.dex.ClassData
 import com.android.dex.ClassDef
+import com.dedx.dex.parser.StaticValuesParser
 import com.dedx.dex.struct.type.TypeBox
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
-class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsData: ClassData?) {
+class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsData: ClassData?): AccessInfo, AttrNode {
 
-    private val clsInfo: ClassInfo = ClassInfo.fromDex(parent.dex, cls.typeIndex)
+    override val attributes: MutableMap<AttrKey, Any> = HashMap()
+    override val accFlags: Int = cls.accessFlags
+    private val clsInfo: ClassInfo = ClassInfo.fromDex(parent, cls.typeIndex)
     private val interfaces: Array<TypeBox> = Array(cls.interfaces.size) {
         i -> TypeBox.create(parent.dex.strings()[cls.interfaces[i].toInt()])
     }
@@ -59,7 +63,8 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
                 return
             }
             val section = parent.parent.dex.open(offset)
-
+            StaticValuesParser(parent.parent, section).processFields(staticFields)
+            ConstStorage.processConstFields(parent, staticFields)
         }
 
         override fun create(parent: DexNode, cls: ClassDef, clsData: ClassData?) = ClassNode(parent, cls, clsData)

@@ -1,0 +1,9 @@
+package com.dedx.utils
+
+class DecodeException: Exception {
+
+    constructor(message: String): super(message)
+
+    constructor(message: String, cause: Throwable): super(message, cause)
+
+}

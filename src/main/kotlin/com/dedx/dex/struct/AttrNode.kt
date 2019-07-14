@@ -4,12 +4,12 @@ enum class AttrKey {
     CONST;
 }
 
-enum class AttrValue {
-    
+class AttrValue(val mark: Int, val value: Any?) {
+
 }
 
 interface AttrNode {
-    var attributes: MutableMap<AttrKey, Any>
+    val attributes: MutableMap<AttrKey, Any>
 
     fun getValue(key: AttrKey) = attributes[key]
 
