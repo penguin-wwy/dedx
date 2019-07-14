@@ -1,4 +1,4 @@
-package com.dedx.struct.type
+package com.dedx.dex.struct.type
 
 enum class BasicType constructor(val signature: String, val typeName: String, val mark: Int) {
     VOID("V", "void", 0),

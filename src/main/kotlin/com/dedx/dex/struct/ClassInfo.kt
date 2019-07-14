@@ -1,4 +1,4 @@
-package com.dedx.struct
+package com.dedx.dex.struct
 
 import com.android.dex.Dex
 

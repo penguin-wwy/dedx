@@ -1,3 +1,3 @@
-package com.dedx.struct.type
+package com.dedx.dex.struct.type
 
 class ObjectType(val typeName: String)

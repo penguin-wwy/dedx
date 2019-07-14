@@ -1,4 +1,4 @@
-package com.dedx.struct.type
+package com.dedx.dex.struct.type
 
 import org.junit.Assert.*
 import org.junit.Test
