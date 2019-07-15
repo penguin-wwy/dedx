@@ -20,6 +20,18 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
     private val methods: List<MethodNode> = addMethods(this, clsData)
     private val fields: List<FieldNode> = addFields(this, cls, clsData)
 
+    private val mthCache: MutableMap<MethodInfo, MethodNode> = HashMap(methods.size)
+    private val fieldCache: MutableMap<FieldInfo, FieldNode> = HashMap(fields.size)
+
+    init {
+        for (mth in methods) {
+            mthCache[mth.mthInfo] = mth
+        }
+        for (field in fields) {
+            fieldCache[field.fieldInfo] = field
+        }
+    }
+
     companion object : ClassNodeFactory<ClassNode> {
 
         fun addMethods(parent: ClassNode, clsData: ClassData?): List<MethodNode> {
@@ -69,5 +81,28 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
         }
 
         override fun create(parent: DexNode, cls: ClassDef, clsData: ClassData?) = ClassNode(parent, cls, clsData)
+    }
+
+    fun searchField(fieldInfo: FieldInfo): FieldNode? {
+        return fieldCache[fieldInfo]
+    }
+
+    fun searchFieldById(index: Int): FieldNode? {
+        return searchField(FieldInfo.fromDex(parent, index))
+    }
+
+    fun searchMethod(mthInfo: MethodInfo): MethodNode? {
+        return mthCache[mthInfo]
+    }
+
+    fun searchMethodById(index: Int): MethodNode? {
+        return searchMethod(MethodInfo.fromDex(parent, index))
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null || other !is ClassNode) {
+            return false
+        }
+        return clsInfo == other.clsInfo
     }
 }

@@ -17,4 +17,11 @@ class FieldInfo(val declClass: ClassInfo, val name: String, val type: TypeBox) {
                     TypeBox.create(dex.getString(field.typeIndex)))
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null || other !is FieldInfo) {
+            return false
+        }
+        return declClass == other.declClass && name == other.name && type == other.type
+    }
 }

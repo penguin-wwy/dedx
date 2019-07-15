@@ -63,7 +63,7 @@ open class EncValueParser(val dex: DexNode, val section: Dex.Section) {
                 }
                 return AttrValue(ENC_ARRAY, values)
             }
-            ENC_ANNOTATION -> return AttrValue(ENC_ANNOTATION, null)
+            ENC_ANNOTATION -> return AttrValue(ENC_ANNOTATION, AnnotationsParser.readAnnotation(dex, section, true))
 
             else -> throw DecodeException("Unknown encode value type: ${type.toString(16)}")
         }
