@@ -2,6 +2,7 @@ package com.dedx.dex.struct
 
 import com.android.dex.ClassData
 import com.android.dex.ClassDef
+import com.dedx.dex.parser.EncValueParser
 import com.dedx.dex.parser.StaticValuesParser
 import com.dedx.dex.struct.type.TypeBox
 import java.util.*
@@ -52,10 +53,10 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
             return fields
         }
 
-        fun loadStaticValues(parent: ClassNode, cls: ClassDef, staticFields: List<FieldNode>) {
+        private fun loadStaticValues(parent: ClassNode, cls: ClassDef, staticFields: List<FieldNode>) {
             for (field in staticFields) {
                 if (field.isFinal()) {
-
+                    field.setValue(AttrKey.CONST, AttrValue(EncValueParser.ENC_NULL, null))
                 }
             }
             val offset = cls.staticValuesOffset
