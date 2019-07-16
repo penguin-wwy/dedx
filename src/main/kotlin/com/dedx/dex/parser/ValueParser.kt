@@ -58,7 +58,7 @@ open class EncValueParser(val dex: DexNode, val section: Dex.Section) {
             ENC_ARRAY -> {
                 val count = Leb128.readUnsignedLeb128(section)
                 val values: MutableList<Any> = ArrayList(count)
-                for (i in 0..count) {
+                for (i in 0 until count) {
                     values.add(parseValue())
                 }
                 return AttrValue(ENC_ARRAY, values)
@@ -72,17 +72,17 @@ open class EncValueParser(val dex: DexNode, val section: Dex.Section) {
     private fun parseNumber(byteCount: Int, isSignExtended: Boolean, fillOnRight: Int): Long {
         var result: Long = 0
         var last: Long = 0
-        for (i in 0..byteCount) {
+        for (i in 0 until byteCount) {
             last = readByte().toLong()
             result = result or (last shl (i * 8))
         }
         if (fillOnRight != 0) {
-            for (i in byteCount..fillOnRight) {
+            for (i in byteCount until fillOnRight) {
                 result = result shl 8
             }
         } else {
             if (isSignExtended && ((last and 0x80L) != 0L)) {
-                for (i in byteCount..8) {
+                for (i in byteCount until 8) {
                     result = result or (0xFFL shl (i * 8))
                 }
             }
@@ -100,7 +100,7 @@ open class EncValueParser(val dex: DexNode, val section: Dex.Section) {
 class StaticValuesParser(dex: DexNode, section: Dex.Section): EncValueParser(dex, section) {
     fun processFields(fields: List<FieldNode>): Int {
         val count = Leb128.readUnsignedLeb128(section)
-        for (i in 0..count) {
+        for (i in 0 until count) {
             val value = parseValue()
             if (i < fields.size) {
                 fields[i].setValue(AttrKey.CONST, value)

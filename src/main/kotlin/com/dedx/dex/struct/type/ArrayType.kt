@@ -7,4 +7,12 @@ class ArrayType(val subType: TypeBox) {
         }
         return subType == other.subType
     }
+
+    override fun hashCode(): Int {
+        return toString().hashCode()
+    }
+
+    override fun toString(): String {
+        return "$subType[]"
+    }
 }

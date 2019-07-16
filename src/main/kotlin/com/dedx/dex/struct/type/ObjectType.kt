@@ -7,4 +7,12 @@ class ObjectType(val typeName: String) {
         }
         return typeName == other.typeName
     }
+
+    override fun hashCode(): Int {
+        return toString().hashCode()
+    }
+
+    override fun toString(): String {
+        return typeName
+    }
 }

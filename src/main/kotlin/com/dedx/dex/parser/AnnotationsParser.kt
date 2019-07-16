@@ -20,8 +20,9 @@ class AnnotationsParser(val dex: DexNode, val cls: ClassNode) {
             val typeIndex = section.readUleb128()
             val size = section.readUleb128()
             val values = LinkedHashMap<String, AttrValue>(size)
-            for (i in 0..size) {
-                values.put(dex.getString(section.readUleb128()), parser.parseValue())
+            for (i in 0 until size) {
+                val name = dex.getString(section.readUleb128())
+                values[name] = parser.parseValue()
             }
             val type = dex.getType(typeIndex)
             val annotation = Annotation(visibility, type, values)
@@ -44,21 +45,21 @@ class AnnotationsParser(val dex: DexNode, val cls: ClassNode) {
             cls.setValue(AttrKey.ANNOTATION, readAnnotationSet(classAnnotationOffset))
         }
 
-        for (i in 0..fieldsCount) {
+        for (i in 0 until fieldsCount) {
             val fieldNode = cls.searchFieldById(section.readInt())
             if (fieldNode?.setValue(AttrKey.ANNOTATION, readAnnotationSet(section.readInt())) == null) {
                 // out log
             }
         }
 
-        for (i in 0..annotatedMethodCount) {
+        for (i in 0 until annotatedMethodCount) {
             val methodNode = cls.searchMethodById(section.readInt())
             if (methodNode?.setValue(AttrKey.ANNOTATION, readAnnotationSet(section.readInt())) == null) {
                 // out log
             }
         }
 
-        for (i in 0..annotationParametersCount) {
+        for (i in 0 until annotationParametersCount) {
             // TODO
         }
     }
@@ -73,7 +74,7 @@ class AnnotationsParser(val dex: DexNode, val cls: ClassNode) {
             return AttrValueList.EMPTY
         }
         val list = ArrayList<AttrValue>(size)
-        for (i in 0..size) {
+        for (i in 0 until size) {
             val anSection = dex.dex.open(section.readInt())
             val annotation = readAnnotation(dex, anSection, true)
             list.add(AttrValue(EncValueParser.ENC_ANNOTATION, annotation))

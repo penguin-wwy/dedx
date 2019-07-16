@@ -1,10 +1,19 @@
 package com.dedx.dex.struct
 
+import com.android.dex.ClassData
 import com.android.dex.Dex
 import com.dedx.dex.struct.type.TypeBox
 import java.io.File
 
+interface DexNodeFactory<T> {
+    fun create(filePath: String): T?
+    fun create(bytes: ByteArray): T?
+}
+
 class DexNode private constructor(val dex: Dex) {
+
+    val classes = ArrayList<ClassNode>()
+    val clsMap = HashMap<ClassInfo, ClassNode>()
 
     companion object : DexNodeFactory<DexNode> {
         override fun create(filePath: String): DexNode? {
@@ -16,10 +25,20 @@ class DexNode private constructor(val dex: Dex) {
                 return null
             }
         }
+
+        override fun create(bytes: ByteArray) = DexNode(Dex(bytes))
     }
 
     fun loadClass() {
-
+        for (cls in dex.classDefs()) {
+            var clsData: ClassData? = null
+            if (cls.classDataOffset != 0) {
+                clsData = dex.readClassData(cls)
+            }
+            val clsNode = ClassNode.create(this, cls, clsData)
+            classes.add(clsNode)
+            clsMap[clsNode.clsInfo] = clsNode
+        }
     }
 
     fun getString(index: Int) = dex.strings()[index]
@@ -30,7 +49,7 @@ class DexNode private constructor(val dex: Dex) {
 
     fun getProtoId(index: Int) = dex.protoIds()[index]
 
-    fun getType(index: Int) = TypeBox.create(getString(index))
+    fun getType(index: Int) = TypeBox.create(getString(dex.typeIds()[index]))
 
     fun getTypeList(offset: Int): List<TypeBox> {
         val paramList = dex.readTypeList(offset)

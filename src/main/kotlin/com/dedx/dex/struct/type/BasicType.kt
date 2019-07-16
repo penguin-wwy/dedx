@@ -10,7 +10,11 @@ enum class BasicType constructor(val signature: String, val typeName: String, va
     FLOAT("F", "float", 6),
     DOUBLE("D", "double", 7),
     OBJECT("L", "object", 8),
-    ARRAY("[", "array", 9);
+    ARRAY("[", "array", 9) {
+        override fun toString(): String {
+            return "[]"
+        }
+    };
 
     companion object {
         fun get(c: Char): BasicType? {
@@ -21,5 +25,9 @@ enum class BasicType constructor(val signature: String, val typeName: String, va
             }
             return null
         }
+    }
+
+    override fun toString(): String {
+        return typeName
     }
 }

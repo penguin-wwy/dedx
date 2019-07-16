@@ -2,9 +2,11 @@ package com.dedx.dex.struct
 
 import com.android.dex.ClassData
 import com.android.dex.ClassDef
+import com.dedx.dex.parser.AnnotationsParser
 import com.dedx.dex.parser.EncValueParser
 import com.dedx.dex.parser.StaticValuesParser
 import com.dedx.dex.struct.type.TypeBox
+import java.lang.Exception
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -13,9 +15,9 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
 
     override val attributes: MutableMap<AttrKey, Any> = HashMap()
     override val accFlags: Int = cls.accessFlags
-    private val clsInfo: ClassInfo = ClassInfo.fromDex(parent, cls.typeIndex)
+    val clsInfo: ClassInfo = ClassInfo.fromDex(parent, cls.typeIndex)
     private val interfaces: Array<TypeBox> = Array(cls.interfaces.size) {
-        i -> TypeBox.create(parent.dex.strings()[cls.interfaces[i].toInt()])
+        i -> parent.getType(cls.interfaces[i].toInt())
     }
     private val methods: List<MethodNode> = addMethods(this, clsData)
     private val fields: List<FieldNode> = addFields(this, cls, clsData)
@@ -29,6 +31,16 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
         }
         for (field in fields) {
             fieldCache[field.fieldInfo] = field
+        }
+
+        val offset = cls.annotationsOffset
+        if (offset != 0) {
+            try {
+                AnnotationsParser(parent, this).parse(offset)
+            } catch (e: Exception) {
+                // TODO
+                e.printStackTrace()
+            }
         }
     }
 

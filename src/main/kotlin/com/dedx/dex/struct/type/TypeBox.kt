@@ -52,6 +52,14 @@ class TypeBox private constructor(val type: Any) {
         false -> null
     }
 
+    override fun hashCode(): Int {
+        return type.hashCode()
+    }
+
+    override fun toString(): String {
+        return type.toString()
+    }
+
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is TypeBox) {
             return false

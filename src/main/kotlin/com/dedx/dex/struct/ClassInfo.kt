@@ -37,7 +37,7 @@ class ClassInfo private constructor(val type: TypeBox,
             }
         }
 
-        fun fromDex(dex: DexNode, typeIndex: Int) = fromType(TypeBox.create(dex.getString(typeIndex)))
+        fun fromDex(dex: DexNode, typeIndex: Int) = fromType(dex.getType(typeIndex))
     }
 
     override fun equals(other: Any?): Boolean {
@@ -45,6 +45,10 @@ class ClassInfo private constructor(val type: TypeBox,
             return false
         }
         return this.type == other.type
+    }
+
+    override fun hashCode(): Int {
+        return type.hashCode()
     }
 
     override fun toString(): String {
