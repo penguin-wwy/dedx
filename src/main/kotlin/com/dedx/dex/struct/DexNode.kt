@@ -59,4 +59,6 @@ class DexNode private constructor(val dex: Dex) {
         }
         return results
     }
+
+    fun readCode(mth: ClassData.Method) = dex.readCode(mth)
 }

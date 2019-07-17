@@ -9,11 +9,25 @@ enum class AttrKey {
 }
 
 open class AttrValue(val mark: Int, val value: Any?) {
+    override fun toString(): String {
+        return value.toString()
+    }
 }
 
 class AttrValueList(value: List<Any> = ArrayList()) : AttrValue(EncValueParser.ENC_ARRAY, value) {
     companion object {
         val EMPTY = AttrValueList(Collections.emptyList())
+    }
+
+    override fun toString(): String {
+        val strBuilder = StringBuilder("[")
+        for (v in super.value as List<Any>) {
+            strBuilder.append("$v ")
+        }
+        strBuilder.deleteCharAt(strBuilder.length - 1)
+        strBuilder.append("]")
+        return strBuilder.toString()
+
     }
 }
 

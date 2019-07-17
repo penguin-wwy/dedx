@@ -12,4 +12,13 @@ class Annotation(val visibility: Visibility?, val type: TypeBox, val values: Map
     fun getDefaultValue(): Any? {
         return values["value"]
     }
+
+    override fun toString(): String {
+        val strBuilder = StringBuilder("{")
+        for (entry in values) {
+            strBuilder.append("${entry.key}:${entry.value},")
+        }
+        strBuilder.deleteCharAt(strBuilder.length - 1)
+        return strBuilder.toString()
+    }
 }
