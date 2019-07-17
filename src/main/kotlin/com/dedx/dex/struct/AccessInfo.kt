@@ -10,6 +10,9 @@ interface AccessInfo {
     fun isProtected(): Boolean {
         return (accFlags and AccessFlags.ACC_PROTECTED) != 0
     }
+    fun isPrivate(): Boolean {
+        return (accFlags and AccessFlags.ACC_PRIVATE) != 0
+    }
     fun isFinal(): Boolean {
         return (accFlags and AccessFlags.ACC_FINAL) != 0
     }

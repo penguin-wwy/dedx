@@ -19,8 +19,8 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
     private val interfaces: Array<TypeBox> = Array(cls.interfaces.size) {
         i -> parent.getType(cls.interfaces[i].toInt())
     }
-    private val methods: List<MethodNode> = addMethods(this, clsData)
-    private val fields: List<FieldNode> = addFields(this, cls, clsData)
+    val methods: List<MethodNode> = addMethods(this, clsData)
+    val fields: List<FieldNode> = addFields(this, cls, clsData)
 
     private val mthCache: MutableMap<MethodInfo, MethodNode> = HashMap(methods.size)
     private val fieldCache: MutableMap<FieldInfo, FieldNode> = HashMap(fields.size)
@@ -42,6 +42,8 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
                 e.printStackTrace()
             }
         }
+
+        val accFlagsValue: Int = 0
     }
 
     companion object : ClassNodeFactory<ClassNode> {
