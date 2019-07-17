@@ -95,6 +95,12 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
         override fun create(parent: DexNode, cls: ClassDef, clsData: ClassData?) = ClassNode(parent, cls, clsData)
     }
 
+    fun load() {
+        for (mth in methods) {
+            mth.load()
+        }
+    }
+
     fun searchField(fieldInfo: FieldInfo): FieldNode? {
         return fieldCache[fieldInfo]
     }
