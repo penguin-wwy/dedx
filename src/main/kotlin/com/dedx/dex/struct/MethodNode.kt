@@ -8,6 +8,7 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
     override val attributes: MutableMap<AttrKey, Any> = HashMap()
 
     val mthInfo = MethodInfo.fromDex(parent.parent, mthData.methodIndex)
+    val descriptor = mthInfo.parseSignature()
 
     val noCode = mthData.codeOffset == 0
 

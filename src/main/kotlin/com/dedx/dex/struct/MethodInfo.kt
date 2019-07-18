@@ -7,6 +7,7 @@ class MethodInfo private constructor(val name: String,
                                      val args: List<TypeBox>,
                                      val declClass: ClassInfo) {
 
+    var signature: String? = null
     companion object {
         fun create(dex: DexNode, mthId: Int): MethodInfo {
             val mthId = dex.getMethodId(mthId)
@@ -27,6 +28,13 @@ class MethodInfo private constructor(val name: String,
             mth = create(dex, mthId)
             return InfoStorage.putMethod(dex, mthId, mth)
         }
+    }
+
+    fun parseSignature(): String {
+        if (signature == null) {
+            signature = ""
+        }
+        return signature!!
     }
 
     override fun equals(other: Any?): Boolean {
