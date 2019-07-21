@@ -8,6 +8,8 @@ class ArrayType(val subType: TypeBox) {
         return subType == other.subType
     }
 
+    fun descriptor() = "[${subType.descriptor()}"
+
     override fun hashCode(): Int {
         return toString().hashCode()
     }

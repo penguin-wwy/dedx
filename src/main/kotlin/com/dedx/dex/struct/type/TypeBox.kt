@@ -52,6 +52,13 @@ class TypeBox private constructor(val type: Any) {
         false -> null
     }
 
+    fun descriptor() = when (type::class) {
+        BasicType::class -> getAsBasicType()!!.descriptor()
+        ObjectType::class -> getAsObjectType()!!.descriptor()
+        ArrayType::class -> getAsArrayType()!!.descriptor()
+        else -> ""
+    }
+
     override fun hashCode(): Int {
         return type.hashCode()
     }

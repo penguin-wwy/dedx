@@ -4,6 +4,9 @@ import com.dedx.dex.parser.EncValueParser
 import java.util.*
 
 enum class AttrKey {
+    LINENUMBER,
+    NAME,
+
     ANNOTATION,
     CONST;
 }
@@ -27,7 +30,6 @@ class AttrValueList(value: List<Any> = ArrayList()) : AttrValue(EncValueParser.E
         strBuilder.deleteCharAt(strBuilder.length - 1)
         strBuilder.append("]")
         return strBuilder.toString()
-
     }
 }
 

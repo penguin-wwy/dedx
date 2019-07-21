@@ -61,4 +61,6 @@ class DexNode private constructor(val dex: Dex) {
     }
 
     fun readCode(mth: ClassData.Method) = dex.readCode(mth)
+
+    fun openSection(offset: Int) = dex.open(offset)
 }

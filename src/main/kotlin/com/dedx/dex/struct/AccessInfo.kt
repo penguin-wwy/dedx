@@ -16,4 +16,7 @@ interface AccessInfo {
     fun isFinal(): Boolean {
         return (accFlags and AccessFlags.ACC_FINAL) != 0
     }
+    fun isStatic(): Boolean {
+        return (accFlags and AccessFlags.ACC_STATIC) != 0
+    }
 }

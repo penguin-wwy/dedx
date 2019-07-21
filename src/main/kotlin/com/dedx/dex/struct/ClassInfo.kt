@@ -38,6 +38,7 @@ class ClassInfo private constructor(val type: TypeBox,
         }
 
         fun fromDex(dex: DexNode, typeIndex: Int) = fromType(dex.getType(typeIndex))
+        fun fromDex(className: String) = fromType(TypeBox.create("L$className;"))
     }
 
     override fun equals(other: Any?): Boolean {

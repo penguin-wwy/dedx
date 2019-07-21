@@ -27,6 +27,8 @@ enum class BasicType constructor(val signature: String, val typeName: String, va
         }
     }
 
+    fun descriptor() = signature
+
     override fun toString(): String {
         return typeName
     }

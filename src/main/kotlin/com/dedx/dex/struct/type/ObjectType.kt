@@ -8,6 +8,8 @@ class ObjectType(val typeName: String) {
         return typeName == other.typeName
     }
 
+    fun descriptor() = "L${typeName.replace('.', '/')};"
+
     override fun hashCode(): Int {
         return toString().hashCode()
     }

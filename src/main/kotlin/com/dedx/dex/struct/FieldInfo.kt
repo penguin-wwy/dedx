@@ -14,7 +14,7 @@ class FieldInfo(val declClass: ClassInfo, val name: String, val type: TypeBox) {
             return from(dex,
                     ClassInfo.fromDex(dex, field.declaringClassIndex),
                     dex.getString(field.nameIndex),
-                    TypeBox.create(dex.getString(field.typeIndex)))
+                    dex.getType(field.typeIndex))
         }
     }
 
