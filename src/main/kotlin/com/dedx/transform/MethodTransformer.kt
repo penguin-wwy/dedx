@@ -1,15 +1,10 @@
 package com.dedx.transform
 
-import com.android.dx.io.OpcodeInfo
-import com.android.dx.io.Opcodes
-import com.android.dx.io.instructions.DecodedInstruction
-import com.android.dx.io.instructions.ShortArrayCodeInput
+import com.dedx.dex.struct.DexNode
 import com.dedx.dex.struct.MethodNode
 import org.objectweb.asm.Label
 import java.lang.Exception
-import java.lang.IllegalArgumentException
 import java.util.*
-import kotlin.collections.ArrayList
 
 class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransformer) {
 
@@ -24,7 +19,9 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         if (mthNode.noCode) {
             return
         }
-
+        if (mthNode.debugInfoOffset != DexNode.NO_INDEX) {
+            MethodDebugInfoVisitor.visitMethod(mthNode)
+        }
         try {
             mthVisit.visitCode()
             val label0 = Label()

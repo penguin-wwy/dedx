@@ -8,4 +8,6 @@ class InstNode(val cursor: Int, val instruction: DecodedInstruction) : AttrNode 
     fun setLineNumber(line: Int) {
         attributes[AttrKey.LINENUMBER] = AttrValue(Enc.ENC_INT, line)
     }
+
+    fun getLineNumber() = attributes[AttrKey.LINENUMBER]?.getAsInt()
 }

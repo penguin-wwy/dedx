@@ -153,9 +153,7 @@ class DebugInfoParser(val mth: MethodNode, val insnList: Array<InstNode?>, debug
 
     private fun setLine(offset: Int, line: Int) {
         val inst = insnList[offset]
-        if (inst != null) {
-            inst.setLineNumber(line)
-        }
+        inst?.setLineNumber(line)
     }
 
     private fun restartVar(regNum: Int, addr: Int) {

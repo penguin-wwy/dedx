@@ -101,4 +101,8 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
     fun dex(): DexNode {
         return parent.parent
     }
+
+    fun setLineNumber(num: Int) {
+        attributes[AttrKey.LINENUMBER] = AttrValue(Enc.ENC_INT, num)
+    }
 }

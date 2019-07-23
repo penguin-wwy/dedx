@@ -24,10 +24,11 @@ class ClassTransformer(val clsNode: ClassNode, val filePath: String): Opcodes {
                 superName,
                 null/*TODO interfaces*/)
 
-        // TODO
+        // TODO: set source file
 //        classWriter.visitSource()
-        for (mthNode in clsNode.methods) {
 
+        for (mthNode in clsNode.methods) {
+            MethodTransformer(mthNode, this).visitMethod()
         }
         classWriter.visitEnd()
         return this
