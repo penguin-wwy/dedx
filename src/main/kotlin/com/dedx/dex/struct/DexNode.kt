@@ -16,6 +16,7 @@ class DexNode private constructor(val dex: Dex) {
     val clsMap = HashMap<ClassInfo, ClassNode>()
 
     companion object : DexNodeFactory<DexNode> {
+        final val NO_INDEX: Int = -1
         override fun create(filePath: String): DexNode? {
             val dexFile = File(filePath)
             if (dexFile.exists() && dexFile.isFile()) {

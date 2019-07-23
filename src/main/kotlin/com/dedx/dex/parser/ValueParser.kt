@@ -3,29 +3,25 @@ package com.dedx.dex.parser
 import com.android.dex.Dex
 import com.android.dex.Leb128
 import com.dedx.dex.struct.*
-import com.dedx.dex.struct.type.TypeBox
+import com.dedx.dex.struct.Enc.ENC_ANNOTATION
+import com.dedx.dex.struct.Enc.ENC_ARRAY
+import com.dedx.dex.struct.Enc.ENC_BOOLEAN
+import com.dedx.dex.struct.Enc.ENC_BYTE
+import com.dedx.dex.struct.Enc.ENC_CHAR
+import com.dedx.dex.struct.Enc.ENC_DOUBLE
+import com.dedx.dex.struct.Enc.ENC_ENUM
+import com.dedx.dex.struct.Enc.ENC_FIELD
+import com.dedx.dex.struct.Enc.ENC_FLOAT
+import com.dedx.dex.struct.Enc.ENC_INT
+import com.dedx.dex.struct.Enc.ENC_LONG
+import com.dedx.dex.struct.Enc.ENC_METHOD
+import com.dedx.dex.struct.Enc.ENC_NULL
+import com.dedx.dex.struct.Enc.ENC_SHORT
+import com.dedx.dex.struct.Enc.ENC_STRING
+import com.dedx.dex.struct.Enc.ENC_TYPE
 import com.dedx.utils.DecodeException
 
 open class EncValueParser(val dex: DexNode, val section: Dex.Section) {
-
-    companion object {
-        const val ENC_BYTE = 0x00
-        const val ENC_SHORT = 0x02
-        const val ENC_CHAR = 0x03
-        const val ENC_INT = 0x04
-        const val ENC_LONG = 0x06
-        const val ENC_FLOAT = 0x10
-        const val ENC_DOUBLE = 0x11
-        const val ENC_STRING = 0x17
-        const val ENC_TYPE = 0x18
-        const val ENC_FIELD = 0x19
-        const val ENC_ENUM = 0x1B
-        const val ENC_METHOD = 0x1A
-        const val ENC_ARRAY = 0x1C
-        const val ENC_ANNOTATION = 0x1D
-        const val ENC_NULL = 0x1E
-        const val ENC_BOOLEAN = 0x1F
-    }
 
     fun parseValue(): AttrValue {
         val argType = readByte()
@@ -48,7 +44,7 @@ open class EncValueParser(val dex: DexNode, val section: Dex.Section) {
 
             ENC_STRING -> return AttrValue(ENC_STRING, dex.getString(parseUnsignedInt(size)))
 
-            ENC_TYPE -> return AttrValue(ENC_TYPE, TypeBox.create(dex.getString(parseUnsignedInt(size))))
+            ENC_TYPE -> return AttrValue(ENC_TYPE, dex.getType(parseUnsignedInt(size)))
 
             ENC_METHOD -> return AttrValue(ENC_METHOD, MethodInfo.fromDex(dex, parseUnsignedInt(size)))
 

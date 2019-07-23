@@ -13,7 +13,7 @@ import kotlin.collections.HashMap
 
 class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsData: ClassData?): AccessInfo, AttrNode {
 
-    override val attributes: MutableMap<AttrKey, Any> = HashMap()
+    override val attributes: MutableMap<AttrKey, AttrValue> = HashMap()
     override val accFlags: Int = cls.accessFlags
     val clsInfo: ClassInfo = ClassInfo.fromDex(parent, cls.typeIndex)
     private val interfaces: Array<TypeBox> = Array(cls.interfaces.size) {
@@ -82,7 +82,7 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
         private fun loadStaticValues(parent: ClassNode, cls: ClassDef, staticFields: List<FieldNode>) {
             for (field in staticFields) {
                 if (field.isFinal()) {
-                    field.setValue(AttrKey.CONST, AttrValue(EncValueParser.ENC_NULL, null))
+                    field.setValue(AttrKey.CONST, AttrValue(Enc.ENC_NULL, null))
                 }
             }
             val offset = cls.staticValuesOffset

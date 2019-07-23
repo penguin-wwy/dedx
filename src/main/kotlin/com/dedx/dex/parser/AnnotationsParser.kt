@@ -77,7 +77,7 @@ class AnnotationsParser(val dex: DexNode, val cls: ClassNode) {
         for (i in 0 until size) {
             val anSection = dex.dex.open(section.readInt())
             val annotation = readAnnotation(dex, anSection, true)
-            list.add(AttrValue(EncValueParser.ENC_ANNOTATION, annotation))
+            list.add(AttrValue(Enc.ENC_ANNOTATION, annotation))
         }
         return AttrValueList(list)
     }

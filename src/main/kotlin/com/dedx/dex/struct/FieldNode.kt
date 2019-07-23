@@ -9,7 +9,7 @@ interface FieldFactory {
 
 class FieldNode private constructor(val parent: ClassNode, val fieldInfo: FieldInfo, access: Int): AccessInfo, AttrNode {
     override val accFlags: Int = access
-    override var attributes: MutableMap<AttrKey, Any> = HashMap()
+    override var attributes: MutableMap<AttrKey, AttrValue> = HashMap()
     companion object : FieldFactory {
         override fun create(parent: ClassNode, field: ClassData.Field): FieldNode {
             val accessFlag = field.accessFlags

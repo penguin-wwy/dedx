@@ -13,7 +13,7 @@ import kotlin.collections.ArrayList
 
 class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVirtual: Boolean): AccessInfo, AttrNode {
     override val accFlags = mthData.accessFlags
-    override val attributes: MutableMap<AttrKey, Any> = HashMap()
+    override val attributes: MutableMap<AttrKey, AttrValue> = HashMap()
 
     val mthInfo = MethodInfo.fromDex(parent.parent, mthData.methodIndex)
     val descriptor = mthInfo.parseSignature()
