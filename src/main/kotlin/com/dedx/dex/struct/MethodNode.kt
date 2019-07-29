@@ -105,4 +105,28 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
     fun setLineNumber(num: Int) {
         attributes[AttrKey.LINENUMBER] = AttrValue(Enc.ENC_INT, num)
     }
+
+    fun getPrevInst(index: Int): InstNode? {
+        var offset = index - 1
+        while (offset >= 0) {
+            if (codeList[offset] != null) {
+                return codeList[offset]
+            } else {
+                offset--
+            }
+        }
+        return null
+    }
+
+    fun getNextInst(index: Int): InstNode? {
+        var offset = index + 1
+        while (offset < codeList.size) {
+            if (codeList[offset] != null) {
+                return codeList[offset]
+            } else {
+                offset++
+            }
+        }
+        return null
+    }
 }

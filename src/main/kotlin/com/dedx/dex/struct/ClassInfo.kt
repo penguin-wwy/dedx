@@ -41,6 +41,10 @@ class ClassInfo private constructor(val type: TypeBox,
         fun fromDex(className: String) = fromType(TypeBox.create("L$className;"))
     }
 
+    fun className(): String {
+        return fullName.replace(".", "/")
+    }
+
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is ClassInfo) {
             return false
