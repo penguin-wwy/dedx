@@ -36,7 +36,7 @@ class DexNode private constructor(val dex: Dex) {
             if (cls.classDataOffset != 0) {
                 clsData = dex.readClassData(cls)
             }
-            val clsNode = ClassNode.create(this, cls, clsData)
+            val clsNode = ClassNode.create(this, cls, clsData).load()
             classes.add(clsNode)
             clsMap[clsNode.clsInfo] = clsNode
         }
@@ -64,4 +64,13 @@ class DexNode private constructor(val dex: Dex) {
     fun readCode(mth: ClassData.Method) = dex.readCode(mth)
 
     fun openSection(offset: Int) = dex.open(offset)
+
+    fun getClass(name: String): ClassNode? {
+        for (entry in clsMap) {
+            if (entry.key.equals(name)) {
+                return entry.value
+            }
+        }
+        return null
+    }
 }

@@ -97,10 +97,11 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
         override fun create(parent: DexNode, cls: ClassDef, clsData: ClassData?) = ClassNode(parent, cls, clsData)
     }
 
-    fun load() {
+    fun load(): ClassNode {
         for (mth in methods) {
             mth.load()
         }
+        return this
     }
 
     fun searchField(fieldInfo: FieldInfo): FieldNode? {
@@ -117,6 +118,15 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
 
     fun searchMethodById(index: Int): MethodNode? {
         return searchMethod(MethodInfo.fromDex(parent, index))
+    }
+
+    fun searchMethodByProto(name: String, proto: String): MethodNode? {
+        for (entry in mthCache) {
+            if ((entry.key.name == name) and (entry.key.parseSignature() == proto)) {
+                return entry.value
+            }
+        }
+        return null
     }
 
     override fun equals(other: Any?): Boolean {

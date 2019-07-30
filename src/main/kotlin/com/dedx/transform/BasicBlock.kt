@@ -1,8 +1,12 @@
 package com.dedx.transform
 
+import com.dedx.dex.struct.InstNode
 import org.objectweb.asm.Label
 
 class BasicBlock private constructor(val startLable: Label, val predecessor: ArrayList<BasicBlock>, val successor: ArrayList<BasicBlock>) {
+
+    var terminal: InstNode? = null
+    val instList = ArrayList<InstNode>()
 
     companion object {
         fun create(startLable: Label, predecessor: BasicBlock?): BasicBlock {

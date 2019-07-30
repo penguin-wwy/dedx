@@ -51,6 +51,7 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
             initMethodTypes()
             initTryCatches(mthCode!!)
             regsCount = mthCode!!.registersSize
+            codeSize = codeList.size
             debugInfoOffset = mthCode!!.debugInfoOffset
         } catch (e: Exception) {
             e.printStackTrace()
@@ -126,6 +127,13 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
             } else {
                 offset++
             }
+        }
+        return null
+    }
+
+    fun getInst(index: Int): InstNode? {
+        if (index < codeList.size) {
+            return codeList[index]
         }
         return null
     }

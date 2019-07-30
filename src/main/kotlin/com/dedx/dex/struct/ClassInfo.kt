@@ -46,10 +46,16 @@ class ClassInfo private constructor(val type: TypeBox,
     }
 
     override fun equals(other: Any?): Boolean {
-        if (other == null || other !is ClassInfo) {
+        if (other == null) {
             return false
         }
-        return this.type == other.type
+        if (other is ClassInfo) {
+            return this.type == other.type
+        } else if (other is String) {
+            val otherName: String = other
+            return (fullName == otherName) or (className() == otherName)
+        }
+        return false
     }
 
     override fun hashCode(): Int {
