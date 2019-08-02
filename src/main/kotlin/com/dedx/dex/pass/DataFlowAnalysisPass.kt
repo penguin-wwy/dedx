@@ -43,12 +43,12 @@ object DataFlowAnalysisPass {
         for (inst in blockInfo.block.instList) {
             val (use, def) = getUseDefReg(inst.instruction)
             for (u in use) {
-                if ((blockInfo.def.get(u) == 1) and (blockInfo.use.get(u) == 0)) {
+                if ((blockInfo.def.get(u) == 0) and (blockInfo.use.get(u) == 0)) {
                     blockInfo.use.setTrue(u)
                 }
             }
             for (d in def) {
-                if ((blockInfo.use.get(d) == 1) and (blockInfo.def.get(d) == 0)) {
+                if ((blockInfo.use.get(d) == 0) and (blockInfo.def.get(d) == 0)) {
                     blockInfo.def.setTrue(d)
                 }
             }
