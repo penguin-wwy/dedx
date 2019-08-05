@@ -40,4 +40,29 @@ class BitArrayTest {
         assertEquals(b3._array[0].toInt(), 32)
         assertEquals(b3._array[1].toUByte(), 128.toUByte())
     }
+
+    @Test
+    fun testSub() {
+        val b1 = BitArray(6)
+        b1.setTrue(5)
+        val b2 = BitArray(16)
+        b2.setTrue(5)
+        b2.setTrue(4)
+        b2.setTrue(15)
+        val b3 = b2.sub(b1)
+        assertEquals(b3._array[1].toUByte(), 128.toUByte())
+        assertEquals(b3._array[0].toInt(), 16)
+    }
+
+    @Test
+    fun testToString() {
+        val b1 = BitArray(6)
+        b1.setTrue(5)
+        assertEquals(b1.toString(), "{5}")
+        val b2 = BitArray(16)
+        b2.setTrue(5)
+        b2.setTrue(4)
+        b2.setTrue(15)
+        assertEquals(b2.toString(), "{4 5 15}")
+    }
 }

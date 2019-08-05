@@ -2,6 +2,8 @@ package com.dedx.transform
 
 import com.android.dx.io.Opcodes
 import com.dedx.dex.pass.CFGBuildPass
+import com.dedx.dex.pass.DataFlowAnalysisPass
+import com.dedx.dex.pass.DataFlowMethodInfo
 import com.dedx.dex.struct.DexNode
 import com.dedx.dex.struct.InstNode
 import com.dedx.dex.struct.MethodInfo
@@ -27,6 +29,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     val dexNode = mthNode.dex()
     var ropper = ReRopper(mthNode.codeSize)
     var entry: BasicBlock? = null
+    var dfInfo: DataFlowMethodInfo? = null
     var exits = ArrayList<BasicBlock>()
 
     val mthVisit = clsTransformer.classWriter.visitMethod(
@@ -41,6 +44,8 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             MethodDebugInfoVisitor.visitMethod(mthNode)
         }
         CFGBuildPass.visit(this)
+        dfInfo = DataFlowAnalysisPass.visit(this)
+        DataFlowAnalysisPass.livenessAnalyzer(dfInfo!!)
         try {
             mthVisit.visitCode()
             val label0 = Label()

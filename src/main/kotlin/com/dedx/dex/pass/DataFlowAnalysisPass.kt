@@ -5,8 +5,13 @@ import com.android.dx.io.instructions.DecodedInstruction
 import com.dedx.transform.BasicBlock
 import com.dedx.transform.MethodTransformer
 import com.dedx.utils.BitArray
+import com.dedx.utils.BlockEmptyException
+import com.dedx.utils.DataFlowAnalyzeException
+import java.util.*
+import java.util.stream.Collectors
+import kotlin.collections.ArrayList
 
-class DataFlowMethodInfo(val mthTransformer: MethodTransformer) {
+open class DataFlowMethodInfo(val mthTransformer: MethodTransformer) {
     val blockInfos = HashMap<BasicBlock, DataFlowBlockInfo>()
 
     init {
@@ -14,11 +19,17 @@ class DataFlowMethodInfo(val mthTransformer: MethodTransformer) {
             blockInfos[bb] = DataFlowBlockInfo(bb, mthTransformer.mthNode.regsCount)
         }
     }
+    open fun getBlocks() = blockInfos.keys
+    open fun getBlockInfos() = blockInfos.values
+    open fun getBlockInfo(block: BasicBlock) = blockInfos[block]
+    open fun isExit(block: BasicBlock) = mthTransformer.exits.contains(block)
 }
 
-class DataFlowBlockInfo(val block: BasicBlock, regCount: Int) {
+open class DataFlowBlockInfo(val block: BasicBlock, regCount: Int) {
     val use = BitArray(regCount)
     val def = BitArray(regCount)
+    var liveIn: BitArray? = null
+    var liveOut: BitArray? = null
 }
 
 object DataFlowAnalysisPass {
@@ -30,13 +41,50 @@ object DataFlowAnalysisPass {
     }
 
     fun usedefAnalysis(dfMethodInfo: DataFlowMethodInfo) {
-        for (entry in dfMethodInfo.blockInfos.values) {
+        for (entry in dfMethodInfo.getBlockInfos()) {
             DataFlowAnalysisPass.usedefAnalysis(entry)
         }
     }
 
     fun livenessAnalyzer(dfMethodInfo: DataFlowMethodInfo) {
-
+        for (blockInfo in dfMethodInfo.getBlockInfos()) {
+            blockInfo.liveIn = BitArray(0)
+        }
+        val blockReverseList = ArrayList<BasicBlock>()
+        blockReverseList.addAll(dfMethodInfo.getBlocks())
+        Collections.sort(blockReverseList, kotlin.Comparator { t1, t2 ->
+            val c1 = t1.firstCursor() ?: throw BlockEmptyException("Compare to empty block")
+            val c2 = t2.firstCursor() ?: throw BlockEmptyException("Compare to empty block")
+            return@Comparator c2.compareTo(c1)
+        })
+        blockReverseList.removeIf { bb -> dfMethodInfo.isExit(bb) }
+        val lastLiveIn = Array(blockReverseList.size) {
+            i -> dfMethodInfo.getBlockInfo(blockReverseList[i])?.liveIn!!._array.copyOf()
+        }
+        val beChange = fun(): Boolean {
+            var result = false
+            for (i in 0 until blockReverseList.size) {
+                val liveIn = dfMethodInfo.getBlockInfo(blockReverseList[i])?.liveIn
+                if (!liveIn!!.equal(lastLiveIn[i])) {
+                    result = true
+                }
+                lastLiveIn[i] = liveIn._array.copyOf()
+            }
+            return result
+        }
+        do {
+            for (i in 0 until blockReverseList.size) {
+                val block = blockReverseList[i]
+                val succList = block.successor.stream().map {
+                    basicBlock -> dfMethodInfo.getBlockInfo(basicBlock)?.liveIn
+                        ?: throw DataFlowAnalyzeException("block's LiveIn empty")
+                }.collect(Collectors.toList()).toList()
+                val currBlockInfo = dfMethodInfo.getBlockInfo(block)
+                        ?: throw BlockEmptyException("Computer liveness with empty block info")
+                currBlockInfo.liveOut = BitArray.merge(succList)
+                currBlockInfo.liveIn = BitArray.merge(currBlockInfo.use, BitArray.sub(currBlockInfo.liveOut!!, currBlockInfo.def))
+            }
+        } while (beChange())
     }
 
     private fun usedefAnalysis(blockInfo: DataFlowBlockInfo) {
@@ -138,31 +186,31 @@ object DataFlowAnalysisPass {
                 return Pair(intArrayOf(inst.a, inst.a + 1, inst.b), IntArray(0))
             }
             Opcodes.FILLED_NEW_ARRAY -> {
-
+                // TODO
             }
             Opcodes.FILLED_NEW_ARRAY_RANGE -> {
-
+                // TODO
             }
             in Opcodes.INVOKE_VIRTUAL..Opcodes.INVOKE_INTERFACE -> {
-
+                // TODO
             }
             in Opcodes.INVOKE_VIRTUAL_RANGE..Opcodes.INVOKE_INTERFACE_RANGE -> {
-
+                // TODO
             }
             Opcodes.INVOKE_POLYMORPHIC -> {
-
+                // TODO
             }
             Opcodes.INVOKE_POLYMORPHIC_RANGE -> {
-
+                // TODO
             }
             Opcodes.INVOKE_CUSTOM -> {
-
+                // TODO
             }
             Opcodes.INVOKE_CUSTOM_RANGE -> {
-
+                // TODO
             }
             else -> {
-
+                // TODO
             }
         }
         return Pair(IntArray(0), IntArray(0))

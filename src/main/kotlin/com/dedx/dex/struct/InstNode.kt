@@ -14,4 +14,8 @@ class InstNode(val cursor: Int, val instruction: DecodedInstruction) : AttrNode 
     }
 
     fun getLineNumber() = attributes[AttrKey.LINENUMBER]?.getAsInt()
+
+    override fun toString(): String {
+        return instruction.toString()
+    }
 }
