@@ -10,6 +10,7 @@ import com.dedx.utils.DecodeException
 import java.lang.IllegalArgumentException
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.collections.HashSet
 
 class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVirtual: Boolean): AccessInfo, AttrNode {
     override val accFlags = mthData.accessFlags
@@ -19,6 +20,8 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
     val descriptor = mthInfo.parseSignature()
     val argsList = ArrayList<InstArgNode>()
     var thisArg: InstArgNode? = null
+    val tryBlockList = ArrayList<TryCatchBlock>()
+    val catchList = ArrayList<ExceptionHandler>()
 
     val noCode = mthData.codeOffset == 0
 
@@ -69,7 +72,38 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
     }
 
     private fun initTryCatches(mthCode: Code) {
+        val catchBlocks = mthCode.catchHandlers
+        val tryList = mthCode.tries
+        if (catchBlocks.isEmpty() and tryList.isEmpty()) {
+            return
+        }
+        var handlerCount = 0
+        val addrs = HashSet<Int>()
+        for (handler in catchBlocks) {
+            val tcBlock = TryCatchBlock()
+            tryBlockList.add(tcBlock)
+            for (i in 0 until handler.addresses.size) {
+                tcBlock.addHandler(this, handler.addresses[i], ClassInfo.fromDex(dex(), handler.typeIndexes[i]))
+                addrs.add(handler.addresses[i])
+                handlerCount++
+            }
+            if (handler.catchAllAddress > 0) {
+                tcBlock.addHandler(this, handler.catchAllAddress, null)
+                handlerCount++
+            }
+        }
 
+        if ((handlerCount > 0) and (handlerCount != addrs.size)) {
+            for (outer in tryBlockList) {
+                for (inner in tryBlockList) {
+                    if ((outer != inner) and inner.containsAllHandlers(outer)) {
+                        inner.removeSameHandlers(outer)
+                    }
+                }
+            }
+        }
+
+        
     }
 
     private fun initMethodTypes() {
@@ -136,5 +170,27 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
             return codeList[index]
         }
         return null
+    }
+
+    fun addExceptionHandler(exceHandler: ExceptionHandler): ExceptionHandler {
+        if (!catchList.isEmpty()) {
+            for (e in catchList) {
+                if (e == exceHandler) {
+                    return e
+                }
+                if (e.addr == exceHandler.addr) {
+                    if (e.handlerBlock == exceHandler.handlerBlock) {
+                        for (type in exceHandler.catchTypes) {
+                            e.catchTypes.add(type)
+                        }
+                    } else {
+                        // merge different block
+                    }
+                    return e
+                }
+            }
+        }
+        catchList.add(exceHandler)
+        return exceHandler
     }
 }
