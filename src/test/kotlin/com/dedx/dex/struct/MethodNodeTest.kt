@@ -14,4 +14,14 @@ class MethodNodeTest {
             method.load()
         }
     }
+
+    @Test
+    fun testTryCatch() {
+        val bytes = MethodNodeTest::class.java.getResource("/TryCatch.dex").openStream().readBytes()
+        val dexNode = DexNode.create(bytes)
+        dexNode.loadClass()
+        val testClazz = dexNode.getClass("TryCatch")
+        val testMethod = testClazz?.searchMethodByProto("NextLineSize", "(Ljava/io/BufferedReader;)I")
+        testMethod?.load()
+    }
 }
