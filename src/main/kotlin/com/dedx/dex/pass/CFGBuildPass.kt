@@ -39,6 +39,7 @@ object CFGBuildPass {
                     meth.exits.add(currBlock)
                 }
             }
+            // TODO split try block
             prevInst = inst
         }
     }
