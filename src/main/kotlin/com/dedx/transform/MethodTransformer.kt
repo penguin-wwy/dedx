@@ -1,6 +1,8 @@
 package com.dedx.transform
 
 import com.android.dx.io.Opcodes
+import com.android.dx.io.instructions.OneRegisterDecodedInstruction
+import com.android.dx.io.instructions.TwoRegisterDecodedInstruction
 import com.dedx.dex.pass.CFGBuildPass
 import com.dedx.dex.pass.DataFlowAnalysisPass
 import com.dedx.dex.pass.DataFlowMethodInfo
@@ -22,6 +24,8 @@ object InvokeType {
     val INVOKEINTERFACE = 185 // -
     val INVOKEDYNAMIC = 186 // visitInvokeDynamicInsn
 }
+
+typealias jvmOpcodes = org.objectweb.asm.Opcodes
 
 class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransformer) {
 
@@ -93,8 +97,8 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                     val startLabel = start.getLabel()?.value ?: throw DecodeException("TryCatch block empty")
                     val endLabel = end.getLabel()?.value ?: throw DecodeException("TryCatch block empty")
                     val catchLabel = catchInst.getLabel()?.value ?: throw DecodeException("TryCatch block empty")
-                    for (type in exec.catchTypes) {
-                        mthVisit.visitTryCatchBlock(startLabel, endLabel, catchLabel, type?.className())
+                    for (type in exec.typeList()) {
+                        mthVisit.visitTryCatchBlock(startLabel, endLabel, catchLabel, type)
                     }
                 }
             }
@@ -123,6 +127,13 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         }
     }
 
+    fun slotNum(regNum: Int): Int {
+        if (mthNode.argsList.isEmpty()) {
+            return regNum
+        }
+        return regNum + mthNode.ins
+    }
+
     private fun process(inst: InstNode, prevLineNumber: Int) {
         if (inst.getLabel() != null) {
             if (inst.getLineNumber() != prevLineNumber) {
@@ -131,12 +142,18 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 visitLabel(inst.getLabel()?.value, null)
             }
         }
-        when (inst.instruction.opcode) {
+        val dalvikInst = inst.instruction
+        when (dalvikInst.opcode) {
+            in Opcodes.CONST_4..Opcodes.CONST -> {
+                visitConst(dalvikInst as OneRegisterDecodedInstruction)
+            }
+            in Opcodes.IF_EQ..Opcodes.IF_LE -> {
+
+            }
             Opcodes.INVOKE_DIRECT -> {
                 visitInvokeDirect(inst, InvokeType.INVOKESPECIAL)
             }
         }
-//        }
     }
 
     private fun visitInvokeDirect(inst: InstNode, invokeType: Int) {
@@ -149,4 +166,24 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         mthVisit.visitLabel(label0)
         if (lineNumber != null) mthVisit.visitLineNumber(lineNumber, label0)
     }
+
+    private fun visitConst(dalvikInst: OneRegisterDecodedInstruction) {
+        when (dalvikInst.opcode) {
+            Opcodes.CONST_4 -> {
+                mthVisit.visitIntInsn(jvmOpcodes.BIPUSH, dalvikInst.literalByte)
+            }
+            Opcodes.CONST_16, Opcodes.CONST/*?*/ -> {
+                mthVisit.visitIntInsn(jvmOpcodes.SIPUSH, dalvikInst.literalInt)
+            }
+             else -> {
+                 throw DecodeException("decode in visitConst")
+            }
+        }
+        mthVisit.visitVarInsn(jvmOpcodes.ISTORE, slotNum(dalvikInst.a))
+    }
+
+//    private fun visitIfStmt(dalvikInst: TwoRegisterDecodedInstruction) {
+//        when (dalvikInst.opcode)
+//    }
+    // TODO need record which type to be cmp
 }
