@@ -9,10 +9,10 @@ class MethodNodeTest {
         val bytes = MethodNodeTest::class.java.getResource("/SingleTest.dex").openStream().readBytes()
         val dexNode = DexNode.create(bytes)
         dexNode.loadClass()
-        val singleTestClazz = dexNode.clsMap.get(ClassInfo.fromDex("com.test.SingleTest"))
-        for (method in singleTestClazz!!.methods) {
-            method.load()
-        }
+        val singleTestClazz = dexNode.getClass("com.test.SingleTest")
+        val mthFibonacci = singleTestClazz?.searchMethodByProto("Fibonacci", "(I)I")
+        assertEquals(mthFibonacci?.argsList?.size, 1)
+        assertEquals(mthFibonacci?.argsList?.get(0)?.regNum, 2)
     }
 
     @Test

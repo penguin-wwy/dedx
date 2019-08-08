@@ -8,7 +8,7 @@ class ClassInfo private constructor(val type: TypeBox,
                                     val name: String,
                                     val fullName: String,
                                     val parentClass: ClassInfo?,
-                                    val isInner: Boolean){
+                                    val isInner: Boolean): Comparable<ClassInfo> {
 
     companion object {
         fun fromType(type: TypeBox): ClassInfo {
@@ -64,5 +64,9 @@ class ClassInfo private constructor(val type: TypeBox,
 
     override fun toString(): String {
         return fullName
+    }
+
+    override fun compareTo(other: ClassInfo): Int {
+        return fullName.compareTo(other.fullName)
     }
 }

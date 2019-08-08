@@ -31,6 +31,8 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
     val noCode = mthData.codeOffset == 0
 
     var regsCount: Int = 0
+    var ins: Int = 0
+    var outs: Int = 0
     var codeSize: Int = 0
     var debugInfoOffset: Int = 0
     var mthCode: Code? = null
@@ -56,11 +58,13 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
             } catch (e: java.lang.Exception) {
                 e.printStackTrace()
             }
-            initMethodTypes()
-            initTryCatches(mthCode!!)
             regsCount = mthCode!!.registersSize
+            ins = mthCode!!.insSize
+            outs = mthCode!!.outsSize
             codeSize = codeList.size
             debugInfoOffset = mthCode!!.debugInfoOffset
+            initMethodTypes()
+            initTryCatches(mthCode!!)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -131,19 +135,20 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
     }
 
     private fun initMethodTypes() {
-        if (isStatic()) {
-            thisArg = InstArgNode(0, parent.clsInfo.type)
+        var argRegOff = regsCount - ins
+        if (!isStatic()) {
+            thisArg = InstArgNode(argRegOff, parent.clsInfo.type)
+            argRegOff++
         }
         if (noCode) {
             return
         }
-        var pos = 1
         for (args in mthInfo.args) {
-            if (pos < regsCount) {
+            if (argRegOff >= regsCount) {
                 throw DecodeException("regs count less argument count in $mthInfo")
             }
-            argsList.add(InstArgNode(pos, args))
-            pos++
+            argsList.add(InstArgNode(argRegOff, args))
+            argRegOff++
         }
     }
 
@@ -204,9 +209,7 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
                 }
                 if (e.addr == exceHandler.addr) {
                     if (e.handlerBlock == exceHandler.handlerBlock) {
-                        for (type in exceHandler.catchTypes) {
-                            e.catchTypes.add(type)
-                        }
+                        e.addException(exceHandler)
                     } else {
                         // merge different block
                     }
