@@ -7,10 +7,11 @@ enum class BasicType constructor(val signature: String, val typeName: String, va
     BYTE("B", "byte", 3),
     SHORT("S", "short", 4),
     INT("I", "int", 5),
-    FLOAT("F", "float", 6),
-    DOUBLE("D", "double", 7),
-    OBJECT("L", "object", 8),
-    ARRAY("[", "array", 9) {
+    LONG("J", "long", 6),
+    FLOAT("F", "float", 7),
+    DOUBLE("D", "double", 8),
+    OBJECT("L", "object", 9),
+    ARRAY("[", "array", 10) {
         override fun toString(): String {
             return "[]"
         }

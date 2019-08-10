@@ -1,8 +1,10 @@
 package com.dedx.transform
 
 import com.android.dx.io.Opcodes
+import com.android.dx.io.instructions.DecodedInstruction
 import com.android.dx.io.instructions.OneRegisterDecodedInstruction
 import com.android.dx.io.instructions.TwoRegisterDecodedInstruction
+import com.android.dx.io.instructions.ZeroRegisterDecodedInstruction
 import com.dedx.dex.pass.CFGBuildPass
 import com.dedx.dex.pass.DataFlowAnalysisPass
 import com.dedx.dex.pass.DataFlowMethodInfo
@@ -12,6 +14,8 @@ import com.dedx.dex.struct.MethodInfo
 import com.dedx.dex.struct.MethodNode
 import com.dedx.tools.Configuration
 import com.dedx.utils.DecodeException
+import com.sun.org.apache.bcel.internal.generic.INVOKESTATIC
+import com.sun.org.apache.bcel.internal.generic.IRETURN
 import org.objectweb.asm.Label
 import java.lang.Exception
 import kotlin.collections.ArrayList
@@ -60,6 +64,10 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         try {
             mthVisit.visitCode()
             visitTryCatchBlock()
+            val entryFrame = StackFrame.getFrameOrPut(0)
+            for (type in mthNode.argsList) {
+                entryFrame.setSlot(type.regNum, SlotType.convert(type.type)!!)
+            }
             var prevLineNumber = 0
             for (inst in mthNode.codeList) {
                 if (inst != null) process(inst, prevLineNumber)
@@ -142,23 +150,67 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 visitLabel(inst.getLabel()?.value, null)
             }
         }
+        val frame = StackFrame.getFrameOrPut(inst.cursor).merge()
         val dalvikInst = inst.instruction
+        // mark last time invoke-kind's return result
+        var newestReturn: SlotType? = null
         when (dalvikInst.opcode) {
+            in Opcodes.MOVE_RESULT..Opcodes.MOVE_RESULT_OBJECT -> {
+                if (newestReturn != null) {
+                    visitStore(newestReturn, dalvikInst.a, frame)
+                }
+            }
+            Opcodes.RETURN_VOID -> {
+                visitReturnVoid()
+            }
+            in Opcodes.RETURN..Opcodes.RETURN_OBJECT -> {
+                visitReturn(dalvikInst.a, frame)
+            }
             in Opcodes.CONST_4..Opcodes.CONST -> {
-                visitConst(dalvikInst as OneRegisterDecodedInstruction)
+                visitConst(dalvikInst as OneRegisterDecodedInstruction, frame)
+            }
+            in Opcodes.GOTO..Opcodes.GOTO_32 -> {
+                visitGoto(dalvikInst as ZeroRegisterDecodedInstruction)
             }
             in Opcodes.IF_EQ..Opcodes.IF_LE -> {
-
+                visitIfStmt(dalvikInst as TwoRegisterDecodedInstruction, frame)
+            }
+            in Opcodes.IF_EQZ..Opcodes.IF_LEZ -> {
+                visitIfStmt(dalvikInst as OneRegisterDecodedInstruction, frame)
+            }
+            Opcodes.INVOKE_VIRTUAL -> {
+                newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKEVIRTUAL, frame)
+            }
+            Opcodes.INVOKE_SUPER -> {
+                // TODO
             }
             Opcodes.INVOKE_DIRECT -> {
-                visitInvokeDirect(inst, InvokeType.INVOKESPECIAL)
+                newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKESPECIAL, frame)
+            }
+            Opcodes.INVOKE_STATIC -> {
+                newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKESTATIC, frame)
+            }
+            Opcodes.INVOKE_INTERFACE -> {
+                // TODO
             }
         }
     }
 
-    private fun visitInvokeDirect(inst: InstNode, invokeType: Int) {
-        val mthInfo = MethodInfo.fromDex(dexNode, inst.instruction.index)
+    private fun visitInvoke(dalvikInst: DecodedInstruction, invokeType: Int, frame: StackFrame): SlotType? {
+        val mthInfo = MethodInfo.fromDex(dexNode, dalvikInst.index)
+        for (i in 0..dalvikInst.registerCount) {
+            when (i) {
+                0 -> {}
+                1 -> visitLoad(dalvikInst.a, frame)
+                2 -> visitLoad(dalvikInst.b, frame)
+                3 -> visitLoad(dalvikInst.c, frame)
+                4 -> visitLoad(dalvikInst.d, frame)
+                5 -> visitLoad(dalvikInst.e, frame)
+                else -> throw DecodeException("invoke instruction register number error.")
+            }
+        }
         mthVisit.visitMethodInsn(invokeType, mthInfo.declClass.className(), mthInfo.name, mthInfo.parseSignature(), false)
+        return SlotType.convert(mthInfo.retType)
     }
 
     private fun visitLabel(label0: Label?, lineNumber: Int?) {
@@ -167,7 +219,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         if (lineNumber != null) mthVisit.visitLineNumber(lineNumber, label0)
     }
 
-    private fun visitConst(dalvikInst: OneRegisterDecodedInstruction) {
+    private fun visitConst(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame) {
         when (dalvikInst.opcode) {
             Opcodes.CONST_4 -> {
                 mthVisit.visitIntInsn(jvmOpcodes.BIPUSH, dalvikInst.literalByte)
@@ -179,11 +231,113 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                  throw DecodeException("decode in visitConst")
             }
         }
-        mthVisit.visitVarInsn(jvmOpcodes.ISTORE, slotNum(dalvikInst.a))
+        val slot = slotNum(dalvikInst.a)
+        mthVisit.visitVarInsn(jvmOpcodes.ISTORE, slot)
+        frame.setSlot(slot, SlotType.INT)
     }
 
-//    private fun visitIfStmt(dalvikInst: TwoRegisterDecodedInstruction) {
-//        when (dalvikInst.opcode)
-//    }
-    // TODO need record which type to be cmp
+    private fun visitIfStmt(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame) {
+        visitLoad(dalvikInst.a, frame)
+        visitLoad(dalvikInst.b, frame)
+        val target = code(dalvikInst.target)?.getLabel()?.value
+                ?: throw DecodeException("${dalvikInst.target} has no lable")
+        mthVisit.visitJumpInsn(dalvikInst.opcode - Opcodes.IF_EQ + jvmOpcodes.IF_ICMPEQ, target)
+        StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(dalvikInst.target)
+    }
+
+    private fun visitIfStmt(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame) {
+        visitLoad(dalvikInst.a, frame)
+        val target = code(dalvikInst.target)?.getLabel()?.value
+                ?: throw DecodeException("${dalvikInst.target} has no lable")
+        mthVisit.visitJumpInsn(dalvikInst.opcode - Opcodes.IF_EQZ + jvmOpcodes.IFEQ, target)
+        StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(dalvikInst.target)
+    }
+
+    private fun visitLoad(slot: Int, frame: StackFrame): SlotType {
+        val slotType = frame.getSlot(slot) ?: throw DecodeException("Empty slot $slot")
+        when (slotType) {
+            in SlotType.BYTE..SlotType.INT -> {
+                mthVisit.visitVarInsn(jvmOpcodes.ILOAD, slot)
+            }
+            SlotType.LONG -> {
+                mthVisit.visitVarInsn(jvmOpcodes.LLOAD, slot)
+            }
+            SlotType.FLOAT -> {
+                mthVisit.visitVarInsn(jvmOpcodes.FLOAD, slot)
+            }
+            SlotType.DOUBLE -> {
+                mthVisit.visitVarInsn(jvmOpcodes.DLOAD, slot)
+            }
+            SlotType.OBJECT -> {
+                mthVisit.visitVarInsn(jvmOpcodes.ALOAD, slot)
+            }
+            else -> {
+                // TODO
+            }
+        }
+        return slotType
+    }
+
+    private fun visitStore(type: SlotType, slot: Int, frame: StackFrame) {
+        when (type) {
+            in SlotType.BYTE..SlotType.INT -> {
+                mthVisit.visitVarInsn(jvmOpcodes.ISTORE, slot)
+                frame.setSlot(slot, type)
+            }
+            SlotType.LONG -> {
+                mthVisit.visitVarInsn(jvmOpcodes.LSTORE, slot)
+                frame.setSlotWide(slot, type)
+            }
+            SlotType.FLOAT -> {
+                mthVisit.visitVarInsn(jvmOpcodes.FSTORE, slot)
+                frame.setSlot(slot, type)
+            }
+            SlotType.DOUBLE -> {
+                mthVisit.visitVarInsn(jvmOpcodes.DSTORE, slot)
+                frame.setSlotWide(slot, type)
+            }
+            SlotType.OBJECT -> {
+                mthVisit.visitVarInsn(jvmOpcodes.ASTORE, slot)
+                frame.setSlot(slot, type)
+            }
+            else -> {
+                // TODO
+            }
+        }
+    }
+
+    private fun visitReturnVoid() {
+        mthVisit.visitInsn(jvmOpcodes.RETURN)
+    }
+
+    private fun visitReturn(slot: Int, frame: StackFrame) {
+        val type = visitLoad(slot, frame)
+        when (type) {
+            in SlotType.BYTE..SlotType.INT -> {
+                mthVisit.visitInsn(jvmOpcodes.IRETURN)
+            }
+            SlotType.LONG -> {
+                mthVisit.visitInsn(jvmOpcodes.LRETURN)
+            }
+            SlotType.FLOAT -> {
+                mthVisit.visitInsn(jvmOpcodes.FRETURN)
+            }
+            SlotType.DOUBLE -> {
+                mthVisit.visitInsn(jvmOpcodes.DRETURN)
+            }
+            SlotType.OBJECT -> {
+                mthVisit.visitInsn(jvmOpcodes.ARETURN)
+            }
+            else -> {
+
+            }
+        }
+    }
+
+    private fun visitGoto(dalvikInst: ZeroRegisterDecodedInstruction) {
+        val target = code(dalvikInst.target)?.getLabel()?.value
+                ?: throw DecodeException("${dalvikInst.target} has no lable")
+        mthVisit.visitJumpInsn(jvmOpcodes.GOTO, target)
+        StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(dalvikInst.target)
+    }
 }
