@@ -43,6 +43,17 @@ enum class SlotType {
             }
         }
     }
+
+    protected var isCPI: Int = -1
+
+    fun isConstantPoolIndex() = isCPI > -1
+
+    fun setConstantPoolAttr(flag: Int): SlotType {
+        isCPI = flag
+        return this
+    }
+
+    fun getConstantPoolAttr() = isCPI
 }
 
 class StackFrame(val cursor: Int) {
