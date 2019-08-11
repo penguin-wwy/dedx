@@ -63,11 +63,14 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     private fun visitNormal() {
         try {
             mthVisit.visitCode()
-            visitTryCatchBlock()
+
+            StackFrame.initInstFrame(mthNode)
             val entryFrame = StackFrame.getFrameOrPut(0)
             for (type in mthNode.argsList) {
                 entryFrame.setSlot(type.regNum, SlotType.convert(type.type)!!)
             }
+
+            visitTryCatchBlock()
             var prevLineNumber = 0
             for (inst in mthNode.codeList) {
                 if (inst != null) process(inst, prevLineNumber)
