@@ -70,6 +70,7 @@ class StackFrame(val cursor: Int) {
         }
 
         fun initInstFrame(mthNode: MethodNode) {
+            InstFrames.clear()
             var prevInst: InstNode? = null
             for (curr in mthNode.codeList) {
                 if (curr == null) continue

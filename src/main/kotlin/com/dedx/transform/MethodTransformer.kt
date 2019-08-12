@@ -65,7 +65,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             StackFrame.initInstFrame(mthNode)
             val entryFrame = StackFrame.getFrameOrPut(0)
             for (type in mthNode.argsList) {
-                entryFrame.setSlot(type.regNum, SlotType.convert(type.type)!!)
+                entryFrame.setSlot(slotNum(type.regNum), SlotType.convert(type.type)!!)
             }
 
             visitTryCatchBlock()
@@ -140,16 +140,17 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         if (mthNode.argsList.isEmpty()) {
             return regNum
         }
-        return regNum + mthNode.ins
+        val offset = mthNode.regsCount - mthNode.ins
+        if (regNum < offset) {
+            return regNum + mthNode.ins - 1
+        } else {
+            return regNum - offset
+        }
     }
 
     private fun process(inst: InstNode, prevLineNumber: Int) {
-        if (inst.getLabel() != null) {
-            if (inst.getLineNumber() != prevLineNumber) {
-                visitLabel(inst.getLabel()?.value, inst.getLineNumber())
-            } else {
-                visitLabel(inst.getLabel()?.value, null)
-            }
+        if (inst.getLineNumber() != prevLineNumber) {
+            visitLabel(inst.getLableOrPut().value, inst.getLineNumber())
         }
         val frame = StackFrame.getFrameOrPut(inst.cursor).merge()
         val dalvikInst = inst.instruction
@@ -250,22 +251,22 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     private fun visitIfStmt(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
         visitLoad(dalvikInst.a, frame, offset)
         visitLoad(dalvikInst.b, frame, offset)
-        val target = code(dalvikInst.target)?.getLabel()?.value
+        val target = code(dalvikInst.target)?.getLableOrPut()?.value
                 ?: throw DecodeException("${dalvikInst.target} has no lable", offset)
         mthVisit.visitJumpInsn(dalvikInst.opcode - Opcodes.IF_EQ + jvmOpcodes.IF_ICMPEQ, target)
-        StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(dalvikInst.target)
+        StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(offset)
     }
 
     private fun visitIfStmt(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
         visitLoad(dalvikInst.a, frame, offset)
-        val target = code(dalvikInst.target)?.getLabel()?.value
+        val target = code(dalvikInst.target)?.getLableOrPut()?.value
                 ?: throw DecodeException("${dalvikInst.target} has no lable", offset)
         mthVisit.visitJumpInsn(dalvikInst.opcode - Opcodes.IF_EQZ + jvmOpcodes.IFEQ, target)
-        StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(dalvikInst.target)
+        StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(offset)
     }
 
     private fun visitLoad(slot: Int, frame: StackFrame, offset: Int): SlotType {
-        val slotType = frame.getSlot(slot) ?: throw DecodeException("Empty slot $slot", offset)
+        val slotType = frame.getSlot(slotNum(slot)) ?: throw DecodeException("Empty slot $slot", offset)
         when (slotType) {
             in SlotType.BYTE..SlotType.INT -> {
                 if (slotType.isConstantPoolIndex()) {
@@ -299,23 +300,23 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 if (!type.isConstantPoolIndex()) {
                     mthVisit.visitVarInsn(jvmOpcodes.ISTORE, slot)
                 }
-                frame.setSlot(slot, type)
+                frame.setSlot(slotNum(slot), type)
             }
             SlotType.LONG -> {
                 mthVisit.visitVarInsn(jvmOpcodes.LSTORE, slot)
-                frame.setSlotWide(slot, type)
+                frame.setSlotWide(slotNum(slot), type)
             }
             SlotType.FLOAT -> {
                 mthVisit.visitVarInsn(jvmOpcodes.FSTORE, slot)
-                frame.setSlot(slot, type)
+                frame.setSlot(slotNum(slot), type)
             }
             SlotType.DOUBLE -> {
                 mthVisit.visitVarInsn(jvmOpcodes.DSTORE, slot)
-                frame.setSlotWide(slot, type)
+                frame.setSlotWide(slotNum(slot), type)
             }
             SlotType.OBJECT -> {
                 mthVisit.visitVarInsn(jvmOpcodes.ASTORE, slot)
-                frame.setSlot(slot, type)
+                frame.setSlot(slotNum(slot), type)
             }
             else -> {
                 // TODO
@@ -352,19 +353,23 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitGoto(dalvikInst: ZeroRegisterDecodedInstruction, offset: Int) {
-        val target = code(dalvikInst.target)?.getLabel()?.value
+        val target = code(dalvikInst.target)?.getLableOrPut()?.value
                 ?: throw DecodeException("${dalvikInst.target} has no lable", offset)
         mthVisit.visitJumpInsn(jvmOpcodes.GOTO, target)
-        StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(dalvikInst.target)
+        StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(offset)
     }
 
     private fun visitGetField(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
         val fieldInfo = FieldInfo.fromDex(dexNode, dalvikInst.index)
-        val fieldNode = mthNode.parent.searchField(fieldInfo) ?: throw DecodeException("Get field $fieldInfo failed.", offset)
-        if (fieldNode.isStatic()) {
+        if (fieldInfo.declClass != mthNode.parent.clsInfo) { // determine this field in parent class
             mthVisit.visitFieldInsn(jvmOpcodes.GETSTATIC, fieldInfo.declClass.className(), fieldInfo.name, fieldInfo.type.descriptor())
         } else {
-            mthVisit.visitFieldInsn(jvmOpcodes.GETFIELD, fieldInfo.declClass.className(), fieldInfo.name, fieldInfo.type.descriptor())
+            val fieldNode = mthNode.parent.searchField(fieldInfo) ?: throw DecodeException("Get field $fieldInfo failed.", offset)
+            if (fieldNode.isStatic()) {
+                mthVisit.visitFieldInsn(jvmOpcodes.GETSTATIC, fieldInfo.declClass.className(), fieldInfo.name, fieldInfo.type.descriptor())
+            } else {
+                mthVisit.visitFieldInsn(jvmOpcodes.GETFIELD, fieldInfo.declClass.className(), fieldInfo.name, fieldInfo.type.descriptor())
+            }
         }
         visitStore(SlotType.convert(fieldInfo.type)!!, dalvikInst.a, frame)
     }
