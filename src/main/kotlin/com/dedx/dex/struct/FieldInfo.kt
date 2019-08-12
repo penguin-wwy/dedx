@@ -24,4 +24,8 @@ class FieldInfo(val declClass: ClassInfo, val name: String, val type: TypeBox) {
         }
         return declClass == other.declClass && name == other.name && type == other.type
     }
+
+    override fun toString(): String {
+        return "$declClass $name"
+    }
 }

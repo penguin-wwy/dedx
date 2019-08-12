@@ -25,6 +25,10 @@ class InstNode(val cursor: Int, val instruction: DecodedInstruction) : AttrNode 
         false -> null
     }
 
+    fun getLableOrPut() = attributes.getOrPut(AttrKey.LABEL) {
+        return@getOrPut AttrValueLabel(Label())
+    } as AttrValueLabel
+
     fun setTryEntry(block: TryCatchBlock) {
         attributes[AttrKey.TRY_ENTRY] = AttrValue(Enc.ENC_TRY_ENTRY, block)
     }

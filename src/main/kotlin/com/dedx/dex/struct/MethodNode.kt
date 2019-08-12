@@ -139,6 +139,7 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
         if (!isStatic()) {
             thisArg = InstArgNode(argRegOff, parent.clsInfo.type)
             argRegOff++
+            argsList.add(thisArg!!)
         }
         if (noCode) {
             return
