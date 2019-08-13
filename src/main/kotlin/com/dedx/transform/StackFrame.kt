@@ -69,6 +69,16 @@ class StackFrame(val cursor: Int) {
             return@getOrPut StackFrame(index)
         }
 
+        fun checkType(type: SlotType, offset: Int, vararg regs: Int) {
+            val frame = InstFrames[offset] ?: throw DecodeException("Empty stack frame for inst[$offset]")
+            for (reg in regs) {
+                val regType = frame.slot2type[reg] ?: throw DecodeException("Empty slot[$reg] for inst[$offset]")
+                if ((type > SlotType.INT && type != regType) || (type <= SlotType.INT && regType > SlotType.INT)) {
+                    throw TypeConfliction("Type confliction when type check: [$reg]")
+                }
+            }
+        }
+
         fun initInstFrame(mthNode: MethodNode) {
             InstFrames.clear()
             var prevInst: InstNode? = null

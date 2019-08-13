@@ -11,10 +11,10 @@ import com.dedx.dex.pass.DataFlowMethodInfo
 import com.dedx.dex.struct.*
 import com.dedx.tools.Configuration
 import com.dedx.utils.DecodeException
+import com.dedx.utils.TypeConfliction
 import com.sun.org.apache.bcel.internal.generic.INVOKESTATIC
 import com.sun.org.apache.bcel.internal.generic.IRETURN
 import org.objectweb.asm.Label
-import java.lang.Exception
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
@@ -195,6 +195,14 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             Opcodes.INVOKE_INTERFACE -> {
                 // TODO
             }
+            in Opcodes.ADD_INT_2ADDR..Opcodes.USHR_INT_2ADDR,
+            in Opcodes.ADD_FLOAT_2ADDR..Opcodes.REM_FLOAT_2ADDR -> {
+                visitBinOp2Addr(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
+            }
+            in Opcodes.ADD_LONG_2ADDR..Opcodes.USHR_LONG_2ADDR,
+            in Opcodes.ADD_DOUBLE_2ADDR..Opcodes.REM_DOUBLE_2ADDR -> {
+                visitBinOpWide2Addr(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
+            }
         }
     }
 
@@ -372,5 +380,50 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             }
         }
         visitStore(SlotType.convert(fieldInfo.type)!!, dalvikInst.a, frame)
+    }
+
+    private fun visitBinOp2Addr(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        try {
+            var type = SlotType.INT
+            if (dalvikInst.opcode >= Opcodes.ADD_FLOAT_2ADDR) {
+                type = SlotType.FLOAT
+            }
+            val regA = slotNum(dalvikInst.a)
+            val regB = slotNum(dalvikInst.b)
+            StackFrame.checkType(type, regA, regB)
+            visitLoad(regA, frame, offset)
+            visitLoad(regB, frame, offset)
+            when (dalvikInst.opcode) {
+                Opcodes.ADD_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.IADD)
+                Opcodes.SUB_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.ISUB)
+                Opcodes.MUL_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.IMUL)
+                Opcodes.DIV_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.IDIV)
+                Opcodes.REM_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.IREM)
+                Opcodes.AND_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.IAND)
+                Opcodes.OR_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.IOR)
+                Opcodes.XOR_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.IXOR)
+                Opcodes.SHL_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.ISHL)
+                Opcodes.SHR_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.ISHR)
+                Opcodes.USHR_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.IUSHR)
+
+                Opcodes.ADD_FLOAT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.FADD)
+                Opcodes.SUB_FLOAT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.FSUB)
+                Opcodes.MUL_FLOAT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.FMUL)
+                Opcodes.DIV_FLOAT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.FDIV)
+                Opcodes.REM_FLOAT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.FREM)
+            }
+            visitStore(type, regA, frame)
+        } catch (ex: Exception) {
+            when (ex) {
+                is DecodeException, is TypeConfliction -> {
+                    throw DecodeException("BinOp2Addr error", offset, ex)
+                }
+                else -> throw ex
+            }
+        }
+    }
+
+    private fun visitBinOpWide2Addr(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+
     }
 }
