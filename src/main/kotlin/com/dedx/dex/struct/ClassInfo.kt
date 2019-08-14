@@ -53,7 +53,7 @@ class ClassInfo private constructor(val type: TypeBox,
             return this.type == other.type
         } else if (other is String) {
             val otherName: String = other
-            return (fullName == otherName) or (className() == otherName)
+            return (fullName == otherName) || (className() == otherName)
         }
         return false
     }

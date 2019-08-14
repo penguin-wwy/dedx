@@ -49,7 +49,7 @@ class TryCatchBlock {
     fun addHandler(mthNode: MethodNode, addr: Int, type: ClassInfo?) {
         val exceHandler = ExceptionHandler(this, addr, type)
         val addHandler = mthNode.addExceptionHandler(exceHandler)
-        if ((addHandler == exceHandler) or (addHandler.handlerBlock != this)) {
+        if ((addHandler == exceHandler) || (addHandler.handlerBlock != this)) {
             execHandlers.add(addHandler)
         }
     }

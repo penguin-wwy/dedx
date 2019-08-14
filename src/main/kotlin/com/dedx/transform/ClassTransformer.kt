@@ -8,7 +8,7 @@ import org.objectweb.asm.Opcodes.V1_8
 import java.io.File
 import java.io.FileOutputStream
 
-class ClassTransformer(val clsNode: ClassNode, val filePath: String): Opcodes {
+class ClassTransformer(val clsNode: ClassNode, val filePath: String = ""): Opcodes {
     val classWriter = ClassWriter(0)
     var fieldVisitor: FieldVisitor? = null
 
@@ -38,4 +38,6 @@ class ClassTransformer(val clsNode: ClassNode, val filePath: String): Opcodes {
         val outputStream = FileOutputStream(File(filePath))
         outputStream.write(classWriter.toByteArray())
     }
+
+    fun toFile(path: String) = FileOutputStream(File(path)).write(classWriter.toByteArray())
 }

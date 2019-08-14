@@ -83,7 +83,7 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
     private fun initTryCatches(mthCode: Code) {
         val catchBlocks = mthCode.catchHandlers
         val tryList = mthCode.tries
-        if (catchBlocks.isEmpty() and tryList.isEmpty()) {
+        if (catchBlocks.isEmpty() && tryList.isEmpty()) {
             return
         }
         var handlerCount = 0
@@ -102,10 +102,10 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
             }
         }
 
-        if ((handlerCount > 0) and (handlerCount != addrs.size)) {
+        if ((handlerCount > 0) && (handlerCount != addrs.size)) {
             for (outer in tryBlockList) {
                 for (inner in tryBlockList) {
-                    if ((outer != inner) and inner.containsAllHandlers(outer)) {
+                    if ((outer != inner) && inner.containsAllHandlers(outer)) {
                         inner.removeSameHandlers(outer)
                     }
                 }
@@ -124,7 +124,7 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
             val tryEntry = codeList[offset] ?: throw DecodeException("Try block first instruction is null.")
             tryEntry.setTryEntry(catchBlock)
             offset++
-            while ((offset <= end) and (offset >= 0)) {
+            while ((offset <= end) && (offset >= 0)) {
                 val insn = codeList[offset]
                 if (insn != null) {
                     catchBlock.instList.add(insn)
@@ -154,7 +154,7 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
     }
 
     fun getArguments(includeThis: Boolean): List<InstArgNode> {
-        if (includeThis and (thisArg != null)) {
+        if (includeThis && (thisArg != null)) {
             val result = ArrayList<InstArgNode>()
             result.add(thisArg!!)
             result.addAll(argsList)
@@ -226,7 +226,7 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
         if (key == AttrKey.ANNOTATION) {
             val addSystem = fun(anno: Annotation?) {
                 if (anno == null) return
-                if ((anno.visibility == Visibility.SYSTEM) and (isSystemCommentType(anno.type.getAsObjectType()!!))) {
+                if ((anno.visibility == Visibility.SYSTEM) && (isSystemCommentType(anno.type.getAsObjectType()!!))) {
                     sysAnnoMap[anno.type] = anno
                 }
             }

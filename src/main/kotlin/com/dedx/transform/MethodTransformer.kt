@@ -73,6 +73,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             for (inst in mthNode.codeList) {
                 if (inst != null) process(inst, prevLineNumber)
             }
+            mthVisit.visitEnd()
         } catch (e: Exception) {
             e.printStackTrace()
         }

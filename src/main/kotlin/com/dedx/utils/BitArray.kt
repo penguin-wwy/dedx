@@ -36,7 +36,7 @@ class BitArray(val size: Int) {
             val result = BitArray(size)
             val offset = max(b1._array.size, b2._array.size)
             for (i in 0 until offset) {
-                if ((i < b1._array.size) and (i < b2._array.size)) {
+                if ((i < b1._array.size) && (i < b2._array.size)) {
                     result._array[i] = (b1._array[i].toInt() and b2._array[i].toInt()).toByte()
                 } else {
                     result._array[i] = 0
@@ -68,7 +68,7 @@ class BitArray(val size: Int) {
             val result = BitArray(size)
             val offset = max(b1._array.size, b2._array.size)
             for (i in 0 until offset) {
-                if ((i < b1._array.size) and (i < b2._array.size)) {
+                if ((i < b1._array.size) && (i < b2._array.size)) {
                     result._array[i] = (b1._array[i].toInt() or b2._array[i].toInt()).toByte()
                 } else {
                     if (i < b1._array.size) {

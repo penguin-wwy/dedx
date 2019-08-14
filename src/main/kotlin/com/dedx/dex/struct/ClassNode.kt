@@ -122,7 +122,7 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
 
     fun searchMethodByProto(name: String, proto: String): MethodNode? {
         for (entry in mthCache) {
-            if ((entry.key.name == name) and (entry.key.parseSignature() == proto)) {
+            if ((entry.key.name == name) && (entry.key.parseSignature() == proto)) {
                 return entry.value
             }
         }
