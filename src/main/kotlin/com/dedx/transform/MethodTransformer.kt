@@ -142,11 +142,17 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         }
         val offset = mthNode.regsCount - mthNode.ins
         if (regNum < offset) {
-            return regNum + mthNode.ins - 1
+            return regNum + mthNode.ins
         } else {
             return regNum - offset
         }
     }
+
+    fun DecodedInstruction.regA() = slotNum(a)
+    fun DecodedInstruction.regB() = slotNum(b)
+    fun DecodedInstruction.regC() = slotNum(c)
+    fun DecodedInstruction.regD() = slotNum(d)
+    fun DecodedInstruction.regE() = slotNum(e)
 
     private fun process(inst: InstNode, prevLineNumber: Int) {
         if (inst.getLineNumber() != prevLineNumber) {
@@ -203,6 +209,9 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             in Opcodes.ADD_DOUBLE_2ADDR..Opcodes.REM_DOUBLE_2ADDR -> {
                 visitBinOpWide2Addr(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
             }
+            in Opcodes.ADD_INT_LIT16..Opcodes.USHR_INT_LIT8 -> {
+                visitBinOp(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
+            }
         }
     }
 
@@ -211,11 +220,11 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         for (i in 0..dalvikInst.registerCount) {
             when (i) {
                 0 -> {}
-                1 -> visitLoad(dalvikInst.a, frame, offset)
-                2 -> visitLoad(dalvikInst.b, frame, offset)
-                3 -> visitLoad(dalvikInst.c, frame, offset)
-                4 -> visitLoad(dalvikInst.d, frame, offset)
-                5 -> visitLoad(dalvikInst.e, frame, offset)
+                1 -> visitLoad(dalvikInst.regA(), frame, offset)
+                2 -> visitLoad(dalvikInst.regB(), frame, offset)
+                3 -> visitLoad(dalvikInst.regC(), frame, offset)
+                4 -> visitLoad(dalvikInst.regD(), frame, offset)
+                5 -> visitLoad(dalvikInst.regE(), frame, offset)
                 else -> throw DecodeException("invoke instruction register number error.", offset)
             }
         }
@@ -252,13 +261,13 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                  throw DecodeException("decode in visitConst", offset)
             }
         }
-        val slot = slotNum(dalvikInst.a)
+        val slot = dalvikInst.regA()
         if (type != null) visitStore(type, slot, frame)
     }
 
     private fun visitIfStmt(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
-        visitLoad(dalvikInst.a, frame, offset)
-        visitLoad(dalvikInst.b, frame, offset)
+        visitLoad(dalvikInst.regA(), frame, offset)
+        visitLoad(dalvikInst.regB(), frame, offset)
         val target = code(dalvikInst.target)?.getLableOrPut()?.value
                 ?: throw DecodeException("${dalvikInst.target} has no lable", offset)
         mthVisit.visitJumpInsn(dalvikInst.opcode - Opcodes.IF_EQ + jvmOpcodes.IF_ICMPEQ, target)
@@ -266,7 +275,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitIfStmt(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
-        visitLoad(dalvikInst.a, frame, offset)
+        visitLoad(dalvikInst.regA(), frame, offset)
         val target = code(dalvikInst.target)?.getLableOrPut()?.value
                 ?: throw DecodeException("${dalvikInst.target} has no lable", offset)
         mthVisit.visitJumpInsn(dalvikInst.opcode - Opcodes.IF_EQZ + jvmOpcodes.IFEQ, target)
@@ -274,7 +283,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitLoad(slot: Int, frame: StackFrame, offset: Int): SlotType {
-        val slotType = frame.getSlot(slotNum(slot)) ?: throw DecodeException("Empty slot $slot", offset)
+        val slotType = frame.getSlot(slot) ?: throw DecodeException("Empty slot $slot", offset)
         when (slotType) {
             in SlotType.BYTE..SlotType.INT -> {
                 if (slotType.isConstantPoolIndex()) {
@@ -308,23 +317,23 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 if (!type.isConstantPoolIndex()) {
                     mthVisit.visitVarInsn(jvmOpcodes.ISTORE, slot)
                 }
-                frame.setSlot(slotNum(slot), type)
+                frame.setSlot(slot, type)
             }
             SlotType.LONG -> {
                 mthVisit.visitVarInsn(jvmOpcodes.LSTORE, slot)
-                frame.setSlotWide(slotNum(slot), type)
+                frame.setSlotWide(slot, type)
             }
             SlotType.FLOAT -> {
                 mthVisit.visitVarInsn(jvmOpcodes.FSTORE, slot)
-                frame.setSlot(slotNum(slot), type)
+                frame.setSlot(slot, type)
             }
             SlotType.DOUBLE -> {
                 mthVisit.visitVarInsn(jvmOpcodes.DSTORE, slot)
-                frame.setSlotWide(slotNum(slot), type)
+                frame.setSlotWide(slot, type)
             }
             SlotType.OBJECT -> {
                 mthVisit.visitVarInsn(jvmOpcodes.ASTORE, slot)
-                frame.setSlot(slotNum(slot), type)
+                frame.setSlot(slot, type)
             }
             else -> {
                 // TODO
@@ -379,7 +388,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 mthVisit.visitFieldInsn(jvmOpcodes.GETFIELD, fieldInfo.declClass.className(), fieldInfo.name, fieldInfo.type.descriptor())
             }
         }
-        visitStore(SlotType.convert(fieldInfo.type)!!, dalvikInst.a, frame)
+        visitStore(SlotType.convert(fieldInfo.type)!!, dalvikInst.regA(), frame)
     }
 
     private fun visitBinOp2Addr(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
@@ -388,9 +397,9 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             if (dalvikInst.opcode >= Opcodes.ADD_FLOAT_2ADDR) {
                 type = SlotType.FLOAT
             }
-            val regA = slotNum(dalvikInst.a)
-            val regB = slotNum(dalvikInst.b)
-            StackFrame.checkType(type, regA, regB)
+            val regA = dalvikInst.regA()
+            val regB = dalvikInst.regB()
+            StackFrame.checkType(type, offset, regA, regB)
             visitLoad(regA, frame, offset)
             visitLoad(regB, frame, offset)
             when (dalvikInst.opcode) {
@@ -425,5 +434,41 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
     private fun visitBinOpWide2Addr(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
 
+    }
+
+    private fun visitBinOp(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        try {
+            val regA = dalvikInst.regA()
+            val regB = dalvikInst.regB()
+            StackFrame.checkType(SlotType.INT, offset, regB)
+            if (dalvikInst.opcode == Opcodes.RSUB_INT || dalvikInst.opcode == Opcodes.RSUB_INT_LIT8) {
+                mthVisit.visitIntInsn(jvmOpcodes.SIPUSH, dalvikInst.literalInt)
+                visitLoad(regB, frame, offset)
+            } else {
+                visitLoad(regB, frame, offset)
+                mthVisit.visitIntInsn(jvmOpcodes.SIPUSH, dalvikInst.literalInt)
+            }
+            when (dalvikInst.opcode) {
+                Opcodes.ADD_INT_LIT8, Opcodes.ADD_INT_LIT16 -> mthVisit.visitInsn(jvmOpcodes.IADD)
+                Opcodes.RSUB_INT_LIT8, Opcodes.RSUB_INT -> mthVisit.visitInsn(jvmOpcodes.ISUB)
+                Opcodes.MUL_INT_LIT8, Opcodes.MUL_INT_LIT16 -> mthVisit.visitInsn(jvmOpcodes.IMUL)
+                Opcodes.DIV_INT_LIT8, Opcodes.DIV_INT_LIT16 -> mthVisit.visitInsn(jvmOpcodes.IDIV)
+                Opcodes.REM_INT_LIT8, Opcodes.REM_INT_LIT16 -> mthVisit.visitInsn(jvmOpcodes.IREM)
+                Opcodes.AND_INT_LIT8, Opcodes.AND_INT_LIT16 -> mthVisit.visitInsn(jvmOpcodes.IAND)
+                Opcodes.OR_INT_LIT8, Opcodes.OR_INT_LIT16 -> mthVisit.visitInsn(jvmOpcodes.IOR)
+                Opcodes.XOR_INT_LIT8, Opcodes.XOR_INT_LIT16 -> mthVisit.visitInsn(jvmOpcodes.IXOR)
+                Opcodes.SHL_INT_LIT8 -> mthVisit.visitInsn(jvmOpcodes.ISHL)
+                Opcodes.SHR_INT_LIT8 -> mthVisit.visitInsn(jvmOpcodes.ISHR)
+                Opcodes.USHR_INT_LIT8 -> mthVisit.visitInsn(jvmOpcodes.IUSHR)
+            }
+            visitStore(SlotType.INT, regA, frame)
+        } catch (ex: Exception) {
+            when (ex) {
+                is DecodeException, is TypeConfliction -> {
+                    throw DecodeException("BinOp2Addr error", offset, ex)
+                }
+                else -> throw ex
+            }
+        }
     }
 }
