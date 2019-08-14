@@ -12,8 +12,6 @@ import com.dedx.dex.struct.*
 import com.dedx.tools.Configuration
 import com.dedx.utils.DecodeException
 import com.dedx.utils.TypeConfliction
-import com.sun.org.apache.bcel.internal.generic.INVOKESTATIC
-import com.sun.org.apache.bcel.internal.generic.IRETURN
 import org.objectweb.asm.Label
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -71,7 +69,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             visitTryCatchBlock()
             var prevLineNumber = 0
             for (inst in mthNode.codeList) {
-                if (inst != null) process(inst, prevLineNumber)
+                if (inst != null) normalProcess(inst, prevLineNumber)
             }
             mthVisit.visitEnd()
         } catch (e: Exception) {
@@ -155,7 +153,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     fun DecodedInstruction.regD() = slotNum(d)
     fun DecodedInstruction.regE() = slotNum(e)
 
-    private fun process(inst: InstNode, prevLineNumber: Int) {
+    private fun normalProcess(inst: InstNode, prevLineNumber: Int) {
         if (inst.getLineNumber() != prevLineNumber) {
             visitLabel(inst.getLableOrPut().value, inst.getLineNumber())
         }
@@ -163,56 +161,101 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         val dalvikInst = inst.instruction
         // mark last time invoke-kind's return result
         when (dalvikInst.opcode) {
+            in Opcodes.MOVE..Opcodes.MOVE_OBJECT_16 -> {
+                visitMove(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
+            }
             in Opcodes.MOVE_RESULT..Opcodes.MOVE_RESULT_OBJECT -> {
-                visitStore(newestReturn ?: throw DecodeException("MOVE_RESULT by null", inst.cursor), dalvikInst.a, frame)
+                visitStore(newestReturn ?: throw DecodeException("MOVE_RESULT by null", inst.cursor), dalvikInst.regA(), frame)
+            }
+            Opcodes.MOVE_EXCEPTION -> {
+                visitStore(SlotType.OBJECT, dalvikInst.regA(), frame)
             }
             Opcodes.RETURN_VOID -> {
                 visitReturnVoid()
             }
             in Opcodes.RETURN..Opcodes.RETURN_OBJECT -> {
-                visitReturn(dalvikInst.a, frame, inst.cursor)
+                visitReturn(dalvikInst.regA(), frame, inst.cursor)
             }
             in Opcodes.CONST_4..Opcodes.CONST_CLASS -> {
                 visitConst(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             }
-            in Opcodes.GOTO..Opcodes.GOTO_32 -> {
-                visitGoto(dalvikInst as ZeroRegisterDecodedInstruction, inst.cursor)
+            Opcodes.MONITOR_ENTER -> {
+
             }
-            in Opcodes.IF_EQ..Opcodes.IF_LE -> {
-                visitIfStmt(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
+            Opcodes.MONITOR_EXIT -> {
+
             }
-            in Opcodes.IF_EQZ..Opcodes.IF_LEZ -> {
-                visitIfStmt(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
+            Opcodes.CHECK_CAST -> {
+
             }
-            in Opcodes.SGET..Opcodes.SGET_SHORT -> {
-                visitGetField(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
+            Opcodes.INSTANCE_OF -> {
+
             }
-            Opcodes.INVOKE_VIRTUAL -> {
-                newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKEVIRTUAL, frame, inst.cursor)
+            Opcodes.ARRAY_LENGTH -> {
+
             }
+            Opcodes.NEW_INSTANCE -> {
+
+            }
+            Opcodes.NEW_ARRAY -> {
+
+            }
+            Opcodes.FILLED_NEW_ARRAY -> {
+
+            }
+            Opcodes.FILLED_NEW_ARRAY_RANGE -> {
+
+            }
+            Opcodes.FILL_ARRAY_DATA -> {
+
+            }
+            Opcodes.THROW -> visitThrow(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
+            in Opcodes.GOTO..Opcodes.GOTO_32 -> visitGoto(dalvikInst as ZeroRegisterDecodedInstruction, inst.cursor)
+            Opcodes.PACKED_SWITCH -> {
+
+            }
+            Opcodes.SPARSE_SWITCH -> {
+
+            }
+            in Opcodes.CMPL_FLOAT..Opcodes.CMP_LONG -> {
+
+            }
+            in Opcodes.IF_EQ..Opcodes.IF_LE -> visitIfStmt(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
+            in Opcodes.IF_EQZ..Opcodes.IF_LEZ -> visitIfStmt(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
+            in Opcodes.AGET..Opcodes.AGET_SHORT -> {
+
+            }
+            in Opcodes.APUT..Opcodes.APUT_SHORT -> {
+
+            }
+            in Opcodes.IGET..Opcodes.IGET_SHORT -> {}
+            in Opcodes.IPUT..Opcodes.IPUT_SHORT -> {}
+            in Opcodes.SGET..Opcodes.SGET_SHORT -> visitGetField(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
+            in Opcodes.SPUT..Opcodes.SPUT_SHORT -> {}
+            Opcodes.INVOKE_VIRTUAL -> newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKEVIRTUAL, frame, inst.cursor)
             Opcodes.INVOKE_SUPER -> {
                 // TODO
             }
-            Opcodes.INVOKE_DIRECT -> {
-                newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKESPECIAL, frame, inst.cursor)
-            }
-            Opcodes.INVOKE_STATIC -> {
-                newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKESTATIC, frame, inst.cursor)
-            }
+            Opcodes.INVOKE_DIRECT -> newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKESPECIAL, frame, inst.cursor)
+            Opcodes.INVOKE_STATIC -> newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKESTATIC, frame, inst.cursor)
             Opcodes.INVOKE_INTERFACE -> {
                 // TODO
             }
+            Opcodes.INVOKE_VIRTUAL_RANGE -> {}
+            Opcodes.INVOKE_SUPER_RANGE -> {}
+            Opcodes.INVOKE_DIRECT_RANGE -> {}
+            Opcodes.INVOKE_STATIC_RANGE -> {}
+            Opcodes.INVOKE_INTERFACE_RANGE -> {}
+            in Opcodes.NEG_INT..Opcodes.INT_TO_SHORT -> {}
+            in Opcodes.ADD_INT..Opcodes.REM_DOUBLE -> {}
             in Opcodes.ADD_INT_2ADDR..Opcodes.USHR_INT_2ADDR,
             in Opcodes.ADD_FLOAT_2ADDR..Opcodes.REM_FLOAT_2ADDR -> {
                 visitBinOp2Addr(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
             }
             in Opcodes.ADD_LONG_2ADDR..Opcodes.USHR_LONG_2ADDR,
-            in Opcodes.ADD_DOUBLE_2ADDR..Opcodes.REM_DOUBLE_2ADDR -> {
-                visitBinOpWide2Addr(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
-            }
-            in Opcodes.ADD_INT_LIT16..Opcodes.USHR_INT_LIT8 -> {
-                visitBinOp(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
-            }
+            in Opcodes.ADD_DOUBLE_2ADDR..Opcodes.REM_DOUBLE_2ADDR -> visitBinOpWide2Addr(
+                    dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
+            in Opcodes.ADD_INT_LIT16..Opcodes.USHR_INT_LIT8 -> visitBinOp(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
         }
     }
 
@@ -466,7 +509,26 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         } catch (ex: Exception) {
             when (ex) {
                 is DecodeException, is TypeConfliction -> {
-                    throw DecodeException("BinOp2Addr error", offset, ex)
+                    throw DecodeException("BinOp error", offset, ex)
+                }
+                else -> throw ex
+            }
+        }
+    }
+
+    private fun visitMove(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        visitStore(visitLoad(dalvikInst.regB(), frame, offset), dalvikInst.regA(), frame)
+    }
+
+    private fun visitThrow(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        try {
+            StackFrame.checkType(SlotType.OBJECT, offset, dalvikInst.regA())
+            visitLoad(dalvikInst.regA(), frame, offset)
+            mthVisit.visitInsn(jvmOpcodes.ATHROW)
+        } catch (ex: Exception) {
+            when (ex) {
+                is DecodeException, is TypeConfliction -> {
+                    throw DecodeException("Throw error", offset, ex)
                 }
                 else -> throw ex
             }
