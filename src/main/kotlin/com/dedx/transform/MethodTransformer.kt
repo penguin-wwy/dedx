@@ -60,6 +60,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         try {
             mthVisit.visitCode()
 
+            SlotType.initConstantValue()
             StackFrame.initInstFrame(mthNode)
             val entryFrame = StackFrame.getFrameOrPut(0)
             for (type in mthNode.argsList) {
@@ -283,30 +284,29 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitConst(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
-        var type: SlotType? = null
+        val slot = dalvikInst.regA()
         when (dalvikInst.opcode) {
             Opcodes.CONST_4 -> {
-                mthVisit.visitIntInsn(jvmOpcodes.BIPUSH, dalvikInst.literalByte)
-                type = SlotType.INT
+                frame.setSlot(slot, SlotType.BYTE)
+                SlotType.setLiteral(slot, false, dalvikInst.literalByte.toLong())
             }
-            in Opcodes.CONST_16..Opcodes.CONST_HIGH16 -> {
-                mthVisit.visitIntInsn(jvmOpcodes.SIPUSH, dalvikInst.literalInt)
-                type = SlotType.INT
+            Opcodes.CONST_16 -> {
+                frame.setSlot(slot, SlotType.SHORT)
+                SlotType.setLiteral(slot, false, dalvikInst.literalUnit.toLong())
+            }
+            in Opcodes.CONST..Opcodes.CONST_HIGH16 -> {
+                frame.setSlot(slot, SlotType.INT)
+                SlotType.setLiteral(slot, false, dalvikInst.literalInt.toLong())
             }
             in Opcodes.CONST_WIDE_16..Opcodes.CONST_WIDE_HIGH16 -> {
-                // TODO long push
-                type = SlotType.LONG
+                frame.setSlot(slot, SlotType.LONG) // also double type
+                SlotType.setLiteral(slot, false, dalvikInst.literal)
             }
-            Opcodes.CONST_STRING, Opcodes.CONST_STRING_JUMBO -> {
-                type = SlotType.INT.setConstantPoolAttr(dalvikInst.index)
-            }
-            Opcodes.CONST_CLASS -> {}
-             else -> {
-                 throw DecodeException("decode in visitConst", offset)
+            Opcodes.CONST_STRING, Opcodes.CONST_STRING_JUMBO, Opcodes.CONST_CLASS -> {
+                frame.setSlot(slot, SlotType.INT) // constant pool index as int type
+                SlotType.setLiteral(slot, true, dalvikInst.index.toLong())
             }
         }
-        val slot = dalvikInst.regA()
-        if (type != null) visitStore(type, slot, frame)
     }
 
     private fun visitIfStmt(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
@@ -328,13 +328,13 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
     private fun visitLoad(slot: Int, frame: StackFrame, offset: Int): SlotType {
         val slotType = frame.getSlot(slot) ?: throw DecodeException("Empty slot $slot", offset)
+        if (SlotType.isConstant(slot)) {
+            visitPushOrLdc(slot, slotType, offset)
+            return slotType
+        }
         when (slotType) {
             in SlotType.BYTE..SlotType.INT -> {
-                if (slotType.isConstantPoolIndex()) {
-                    mthVisit.visitLdcInsn(dexNode.getString(slotType.getConstantPoolAttr()))
-                } else {
-                    mthVisit.visitVarInsn(jvmOpcodes.ILOAD, slot)
-                }
+                mthVisit.visitVarInsn(jvmOpcodes.ILOAD, slot)
             }
             SlotType.LONG -> {
                 mthVisit.visitVarInsn(jvmOpcodes.LLOAD, slot)
@@ -355,12 +355,37 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         return slotType
     }
 
+    private fun SlotType.Companion.isConstant(slot: Int)
+            = SlotType.isConstantPoolIndex(slot) || SlotType.isConstantPoolLiteral(slot)
+
+    private fun visitPushOrLdc(slot: Int, slotType: SlotType, offset: Int) {
+        try {
+            val literal = SlotType.getLiteral(slot)
+            if (SlotType.isConstantPoolLiteral(slot)) {
+                when (slotType) {
+                    SlotType.BYTE -> mthVisit.visitIntInsn(jvmOpcodes.BIPUSH, literal.toInt())
+                    SlotType.SHORT -> mthVisit.visitIntInsn(jvmOpcodes.SIPUSH, literal.toInt())
+                    // these can cast to iconst_<i>, fconst_<f>, lconst_<l> or dconst_<d>
+                    // but need to know the type
+                    SlotType.INT -> mthVisit.visitLdcInsn(literal.toInt())
+                    SlotType.LONG -> mthVisit.visitLdcInsn(literal)
+                    else -> {
+                        throw DecodeException("Const type error", offset)
+                    }
+                }
+            }
+            if (SlotType.isConstantPoolIndex(slot)) {
+                mthVisit.visitLdcInsn(dexNode.getString(SlotType.getLiteral(slot).toInt()))
+            }
+        } catch (de: DecodeException) {
+            throw DecodeException("LDC instruction error", offset, de)
+        }
+    }
+
     private fun visitStore(type: SlotType, slot: Int, frame: StackFrame) {
         when (type) {
             in SlotType.BYTE..SlotType.INT -> {
-                if (!type.isConstantPoolIndex()) {
-                    mthVisit.visitVarInsn(jvmOpcodes.ISTORE, slot)
-                }
+                mthVisit.visitVarInsn(jvmOpcodes.ISTORE, slot)
                 frame.setSlot(slot, type)
             }
             SlotType.LONG -> {
@@ -443,7 +468,9 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             }
             val regA = dalvikInst.regA()
             val regB = dalvikInst.regB()
-            StackFrame.checkType(type, offset, regA, regB)
+            if (!SlotType.isConstant(regA) && !SlotType.isConstant(regB)) {
+                StackFrame.checkType(type, offset, regA, regB)
+            } // because of missing type information for constants, can't check type for constants
             visitLoad(regA, frame, offset)
             visitLoad(regB, frame, offset)
             when (dalvikInst.opcode) {
@@ -484,7 +511,9 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         try {
             val regA = dalvikInst.regA()
             val regB = dalvikInst.regB()
-            StackFrame.checkType(SlotType.INT, offset, regB)
+            if (!SlotType.isConstant(regB)) {
+                StackFrame.checkType(SlotType.INT, offset, regB)
+            } // because of missing type information for constants, can't check type for constants
             if (dalvikInst.opcode == Opcodes.RSUB_INT || dalvikInst.opcode == Opcodes.RSUB_INT_LIT8) {
                 mthVisit.visitIntInsn(jvmOpcodes.SIPUSH, dalvikInst.literalInt)
                 visitLoad(regB, frame, offset)
@@ -522,7 +551,10 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
     private fun visitThrow(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
         try {
-            StackFrame.checkType(SlotType.OBJECT, offset, dalvikInst.regA())
+            val regA = dalvikInst.regA()
+            if (!SlotType.isConstant(regA)) {
+                StackFrame.checkType(SlotType.OBJECT, offset, dalvikInst.regA())
+            } // because of missing type information for constants, can't check type for constants
             visitLoad(dalvikInst.regA(), frame, offset)
             mthVisit.visitInsn(jvmOpcodes.ATHROW)
         } catch (ex: Exception) {
