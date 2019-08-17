@@ -1,10 +1,7 @@
 package com.dedx.transform
 
 import com.android.dx.io.Opcodes
-import com.android.dx.io.instructions.DecodedInstruction
-import com.android.dx.io.instructions.OneRegisterDecodedInstruction
-import com.android.dx.io.instructions.TwoRegisterDecodedInstruction
-import com.android.dx.io.instructions.ZeroRegisterDecodedInstruction
+import com.android.dx.io.instructions.*
 import com.dedx.dex.pass.CFGBuildPass
 import com.dedx.dex.pass.DataFlowAnalysisPass
 import com.dedx.dex.pass.DataFlowMethodInfo
@@ -175,16 +172,16 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 visitReturnVoid()
             }
             in Opcodes.RETURN..Opcodes.RETURN_OBJECT -> {
-                visitReturn(dalvikInst.regA(), frame, inst.cursor)
+                visitReturn(dalvikInst.regA(), SlotType.convert(mthNode.getReturnType())!!, inst.cursor)
             }
             in Opcodes.CONST_4..Opcodes.CONST_CLASS -> {
                 visitConst(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.MONITOR_ENTER -> {
-
+                visitMonitor(true, dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.MONITOR_EXIT -> {
-
+                visitMonitor(false, dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.CHECK_CAST -> {
 
@@ -210,7 +207,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             Opcodes.FILL_ARRAY_DATA -> {
 
             }
-            Opcodes.THROW -> visitThrow(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
+            Opcodes.THROW -> visitThrow(dalvikInst as OneRegisterDecodedInstruction, inst.cursor)
             in Opcodes.GOTO..Opcodes.GOTO_32 -> visitGoto(dalvikInst as ZeroRegisterDecodedInstruction, inst.cursor)
             Opcodes.PACKED_SWITCH -> {
 
@@ -218,9 +215,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             Opcodes.SPARSE_SWITCH -> {
 
             }
-            in Opcodes.CMPL_FLOAT..Opcodes.CMP_LONG -> {
-
-            }
+            in Opcodes.CMPL_FLOAT..Opcodes.CMP_LONG -> visitCmpStmt(dalvikInst as ThreeRegisterDecodedInstruction, frame, inst.cursor)
             in Opcodes.IF_EQ..Opcodes.IF_LE -> visitIfStmt(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
             in Opcodes.IF_EQZ..Opcodes.IF_LEZ -> visitIfStmt(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             in Opcodes.AGET..Opcodes.AGET_SHORT -> {
@@ -262,15 +257,34 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
     private fun visitInvoke(dalvikInst: DecodedInstruction, invokeType: Int, frame: StackFrame, offset: Int): SlotType? {
         val mthInfo = MethodInfo.fromDex(dexNode, dalvikInst.index)
-        for (i in 0..dalvikInst.registerCount) {
-            when (i) {
-                0 -> {}
-                1 -> visitLoad(dalvikInst.regA(), frame, offset)
-                2 -> visitLoad(dalvikInst.regB(), frame, offset)
-                3 -> visitLoad(dalvikInst.regC(), frame, offset)
-                4 -> visitLoad(dalvikInst.regD(), frame, offset)
-                5 -> visitLoad(dalvikInst.regE(), frame, offset)
-                else -> throw DecodeException("invoke instruction register number error.", offset)
+        val thisPos = when (invokeType) {
+            InvokeType.INVOKESTATIC -> 0
+            else -> 1
+        }
+        if (dalvikInst.registerCount != mthInfo.args.size + thisPos)
+            throw DecodeException("argument count error", offset)
+        if (thisPos == 1) {
+            for (i in 0 until dalvikInst.registerCount) {
+                val argPos = i - thisPos
+                when (argPos) {
+                    -1 -> visitLoad(dalvikInst.regA(), SlotType.OBJECT, offset) // push this
+                    0 -> visitLoad(dalvikInst.regB(), SlotType.convert(mthInfo.args[argPos])!!, offset)
+                    1 -> visitLoad(dalvikInst.regC(), SlotType.convert(mthInfo.args[argPos])!!, offset)
+                    2 -> visitLoad(dalvikInst.regD(), SlotType.convert(mthInfo.args[argPos])!!, offset)
+                    3 -> visitLoad(dalvikInst.regE(), SlotType.convert(mthInfo.args[argPos])!!, offset)
+                    else -> throw DecodeException("invoke instruction register number error.", offset)
+                }
+            }
+        } else {
+            for(i in 0 until dalvikInst.registerCount) {
+                when (i) {
+                    0 -> visitLoad(dalvikInst.regA(), SlotType.convert(mthInfo.args[i])!!, offset)
+                    1 -> visitLoad(dalvikInst.regB(), SlotType.convert(mthInfo.args[i])!!, offset)
+                    2 -> visitLoad(dalvikInst.regC(), SlotType.convert(mthInfo.args[i])!!, offset)
+                    3 -> visitLoad(dalvikInst.regD(), SlotType.convert(mthInfo.args[i])!!, offset)
+                    4 -> visitLoad(dalvikInst.regE(), SlotType.convert(mthInfo.args[i])!!, offset)
+                    else -> throw DecodeException("invoke instruction register number error.", offset)
+                }
             }
         }
         mthVisit.visitMethodInsn(invokeType, mthInfo.declClass.className(), mthInfo.name, mthInfo.parseSignature(), false)
@@ -310,8 +324,8 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitIfStmt(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
-        visitLoad(dalvikInst.regA(), frame, offset)
-        visitLoad(dalvikInst.regB(), frame, offset)
+        visitLoad(dalvikInst.regA(), SlotType.INT, offset)
+        visitLoad(dalvikInst.regB(), SlotType.INT, offset)
         val target = code(dalvikInst.target)?.getLableOrPut()?.value
                 ?: throw DecodeException("${dalvikInst.target} has no lable", offset)
         mthVisit.visitJumpInsn(dalvikInst.opcode - Opcodes.IF_EQ + jvmOpcodes.IF_ICMPEQ, target)
@@ -319,15 +333,14 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitIfStmt(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
-        visitLoad(dalvikInst.regA(), frame, offset)
+        visitLoad(dalvikInst.regA(), SlotType.INT, offset)
         val target = code(dalvikInst.target)?.getLableOrPut()?.value
                 ?: throw DecodeException("${dalvikInst.target} has no lable", offset)
         mthVisit.visitJumpInsn(dalvikInst.opcode - Opcodes.IF_EQZ + jvmOpcodes.IFEQ, target)
         StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(offset)
     }
 
-    private fun visitLoad(slot: Int, frame: StackFrame, offset: Int): SlotType {
-        val slotType = frame.getSlot(slot) ?: throw DecodeException("Empty slot $slot", offset)
+    private fun visitLoad(slot: Int, slotType: SlotType, offset: Int): SlotType {
         if (SlotType.isConstant(slot)) {
             visitPushOrLdc(slot, slotType, offset)
             return slotType
@@ -362,23 +375,58 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         try {
             val literal = SlotType.getLiteral(slot)
             if (SlotType.isConstantPoolLiteral(slot)) {
-                when (slotType) {
-                    SlotType.BYTE -> mthVisit.visitIntInsn(jvmOpcodes.BIPUSH, literal.toInt())
-                    SlotType.SHORT -> mthVisit.visitIntInsn(jvmOpcodes.SIPUSH, literal.toInt())
-                    // these can cast to iconst_<i>, fconst_<f>, lconst_<l> or dconst_<d>
-                    // but need to know the type
-                    SlotType.INT -> mthVisit.visitLdcInsn(literal.toInt())
-                    SlotType.LONG -> mthVisit.visitLdcInsn(literal)
-                    else -> {
-                        throw DecodeException("Const type error", offset)
-                    }
-                }
+                visitPushOrLdc(false, literal, slotType, offset)
             }
             if (SlotType.isConstantPoolIndex(slot)) {
-                mthVisit.visitLdcInsn(dexNode.getString(SlotType.getLiteral(slot).toInt()))
+                visitPushOrLdc(true, literal, slotType, offset)
             }
         } catch (de: DecodeException) {
             throw DecodeException("LDC instruction error", offset, de)
+        }
+    }
+
+    private fun visitPushOrLdc(isIndex: Boolean, literal: Long, slotType: SlotType, offset: Int) {
+        if (isIndex) {
+            mthVisit.visitLdcInsn(dexNode.getString(literal.toInt()))
+        } else {
+            when (slotType) {
+                SlotType.BYTE -> mthVisit.visitIntInsn(jvmOpcodes.BIPUSH, literal.toInt())
+                SlotType.SHORT -> mthVisit.visitIntInsn(jvmOpcodes.SIPUSH, literal.toInt())
+                SlotType.INT -> {
+                    val intLiteral = literal.toInt()
+                    if (intLiteral in -1..5) {
+                        mthVisit.visitInsn(jvmOpcodes.ICONST_M1 + intLiteral + 1)
+                    } else {
+                        mthVisit.visitLdcInsn(literal.toInt())
+                    }
+                }
+                SlotType.FLOAT -> {
+                    val floatBits = literal.toInt()
+                    when (floatBits) {
+                        0.0f.toRawBits() -> mthVisit.visitInsn(jvmOpcodes.FCONST_0)
+                        1.0f.toRawBits() -> mthVisit.visitInsn(jvmOpcodes.FCONST_1)
+                        2.0f.toRawBits() -> mthVisit.visitInsn(jvmOpcodes.FCONST_2)
+                        else -> mthVisit.visitLdcInsn(Float.fromBits(floatBits))
+                    }
+                }
+                SlotType.LONG -> {
+                    when (literal) {
+                        0L -> mthVisit.visitInsn(jvmOpcodes.LCONST_0)
+                        1L -> mthVisit.visitInsn(jvmOpcodes.LCONST_1)
+                        else -> mthVisit.visitLdcInsn(literal)
+                    }
+                }
+                SlotType.DOUBLE -> {
+                    when (literal) {
+                        0.0.toRawBits() -> mthVisit.visitInsn(jvmOpcodes.DCONST_0)
+                        1.0.toRawBits() -> mthVisit.visitInsn(jvmOpcodes.DCONST_1)
+                        else -> mthVisit.visitLdcInsn(Double.fromBits(literal))
+                    }
+                }
+                else -> {
+                    throw DecodeException("Const type error", offset)
+                }
+            }
         }
     }
 
@@ -414,8 +462,8 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         mthVisit.visitInsn(jvmOpcodes.RETURN)
     }
 
-    private fun visitReturn(slot: Int, frame: StackFrame, offset: Int) {
-        val type = visitLoad(slot, frame, offset)
+    private fun visitReturn(slot: Int, type: SlotType, offset: Int) {
+        val type = visitLoad(slot, type, offset)
         when (type) {
             in SlotType.BYTE..SlotType.INT -> {
                 mthVisit.visitInsn(jvmOpcodes.IRETURN)
@@ -468,11 +516,9 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             }
             val regA = dalvikInst.regA()
             val regB = dalvikInst.regB()
-            if (!SlotType.isConstant(regA) && !SlotType.isConstant(regB)) {
-                StackFrame.checkType(type, offset, regA, regB)
-            } // because of missing type information for constants, can't check type for constants
-            visitLoad(regA, frame, offset)
-            visitLoad(regB, frame, offset)
+            StackFrame.checkType(type, offset, regA, regB)
+            visitLoad(regA, type, offset)
+            visitLoad(regB, type, offset)
             when (dalvikInst.opcode) {
                 Opcodes.ADD_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.IADD)
                 Opcodes.SUB_INT_2ADDR -> mthVisit.visitInsn(jvmOpcodes.ISUB)
@@ -515,11 +561,11 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 StackFrame.checkType(SlotType.INT, offset, regB)
             } // because of missing type information for constants, can't check type for constants
             if (dalvikInst.opcode == Opcodes.RSUB_INT || dalvikInst.opcode == Opcodes.RSUB_INT_LIT8) {
-                mthVisit.visitIntInsn(jvmOpcodes.SIPUSH, dalvikInst.literalInt)
-                visitLoad(regB, frame, offset)
+                visitPushOrLdc(false, dalvikInst.literalInt.toLong(), SlotType.INT, offset)
+                visitLoad(regB, SlotType.SHORT, offset)
             } else {
-                visitLoad(regB, frame, offset)
-                mthVisit.visitIntInsn(jvmOpcodes.SIPUSH, dalvikInst.literalInt)
+                visitLoad(regB, SlotType.INT, offset)
+                visitPushOrLdc(false, dalvikInst.literalInt.toLong(), SlotType.INT, offset)
             }
             when (dalvikInst.opcode) {
                 Opcodes.ADD_INT_LIT8, Opcodes.ADD_INT_LIT16 -> mthVisit.visitInsn(jvmOpcodes.IADD)
@@ -546,16 +592,16 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitMove(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
-        visitStore(visitLoad(dalvikInst.regB(), frame, offset), dalvikInst.regA(), frame)
+        val regB = dalvikInst.regB()
+        val slotType = frame.slot2type[regB] ?: throw DecodeException("Empty type in slot [$regB]")
+        visitStore(visitLoad(regB, slotType, offset), dalvikInst.regA(), frame)
     }
 
-    private fun visitThrow(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+    private fun visitThrow(dalvikInst: OneRegisterDecodedInstruction, offset: Int) {
         try {
             val regA = dalvikInst.regA()
-            if (!SlotType.isConstant(regA)) {
-                StackFrame.checkType(SlotType.OBJECT, offset, dalvikInst.regA())
-            } // because of missing type information for constants, can't check type for constants
-            visitLoad(dalvikInst.regA(), frame, offset)
+            StackFrame.checkType(SlotType.OBJECT, offset, regA)
+            visitLoad(regA, SlotType.OBJECT, offset)
             mthVisit.visitInsn(jvmOpcodes.ATHROW)
         } catch (ex: Exception) {
             when (ex) {
@@ -564,6 +610,49 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 }
                 else -> throw ex
             }
+        }
+    }
+
+    private fun visitCmpStmt(dalvikInst: ThreeRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        try {
+            val regA = dalvikInst.regA()
+            val regB = dalvikInst.regB()
+            val regC = dalvikInst.regC()
+            when (dalvikInst.opcode) {
+                Opcodes.CMPL_FLOAT, Opcodes.CMPG_FLOAT -> {
+                    visitLoad(regB, SlotType.FLOAT, offset)
+                    visitLoad(regC, SlotType.FLOAT, offset)
+                    mthVisit.visitInsn(jvmOpcodes.FCMPL + dalvikInst.opcode - Opcodes.CMPL_FLOAT)
+                }
+                Opcodes.CMPL_DOUBLE, Opcodes.CMPG_DOUBLE -> {
+                    visitLoad(regB, SlotType.DOUBLE, offset)
+                    visitLoad(regC, SlotType.DOUBLE, offset)
+                    mthVisit.visitInsn(jvmOpcodes.DCMPL + dalvikInst.opcode - Opcodes.CMPL_DOUBLE)
+                }
+                Opcodes.CMP_LONG -> {
+                    visitLoad(regB, SlotType.LONG, offset)
+                    visitLoad(regC, SlotType.LONG, offset)
+                    mthVisit.visitInsn(jvmOpcodes.LCMP)
+                }
+            }
+            visitStore(SlotType.INT, regA, frame)
+        } catch (ex: Exception) {
+
+        }
+    }
+
+    private fun visitMonitor(isEntry: Boolean, dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        try {
+            val regA = dalvikInst.regA()
+            StackFrame.checkType(SlotType.OBJECT, offset, regA)
+            visitLoad(regA, SlotType.OBJECT, offset)
+            if (isEntry) {
+                mthVisit.visitInsn(jvmOpcodes.MONITORENTER)
+            } else {
+                mthVisit.visitInsn(jvmOpcodes.MONITOREXIT)
+            }
+        } catch (ex: Exception) {
+
         }
     }
 }

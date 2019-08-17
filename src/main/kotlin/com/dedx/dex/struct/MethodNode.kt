@@ -222,6 +222,8 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
         return exceHandler
     }
 
+    fun getReturnType() = mthInfo.retType
+
     override fun setValue(key: AttrKey, value: AttrValue) {
         if (key == AttrKey.ANNOTATION) {
             val addSystem = fun(anno: Annotation?) {
