@@ -5,7 +5,6 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class MethodTransformerTest {
-
     @Test
     fun singleTest() {
         val bytes = MethodTransformerTest::class.java.getResource("/SingleTest.dex").openStream().readBytes()
@@ -15,8 +14,7 @@ class MethodTransformerTest {
         val classTransformer = ClassTransformer(testClazz!!, "")
         classTransformer.visitClass()
         val path = MethodTransformerTest::class.java.getResource("/SingleTest.dex")
-                .file.replace("SingleTest.dex", "SingleTest-out.class")
+                .file.replace("SingleTest.dex", "com/test/SingleTest.class")
         println(path)
-        classTransformer.toFile(path)
     }
 }

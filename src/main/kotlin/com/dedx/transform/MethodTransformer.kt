@@ -34,6 +34,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     var dfInfo: DataFlowMethodInfo? = null
     var exits = ArrayList<BasicBlock>()
     var newestReturn: SlotType? = null
+    var prevLineNumber: Int = 0
 
     val mthVisit = clsTransformer.classWriter.visitMethod(
             mthNode.accFlags, mthNode.mthInfo.name, mthNode.descriptor,
@@ -65,10 +66,11 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             }
 
             visitTryCatchBlock()
-            var prevLineNumber = 0
+            prevLineNumber = 0
             for (inst in mthNode.codeList) {
-                if (inst != null) normalProcess(inst, prevLineNumber)
+                if (inst != null) normalProcess(inst)
             }
+            mthVisit.visitMaxs(mthNode.regsCount, mthNode.regsCount)
             mthVisit.visitEnd()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -151,8 +153,9 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     fun DecodedInstruction.regD() = slotNum(d)
     fun DecodedInstruction.regE() = slotNum(e)
 
-    private fun normalProcess(inst: InstNode, prevLineNumber: Int) {
+    private fun normalProcess(inst: InstNode) {
         if (inst.getLineNumber() != prevLineNumber) {
+            this.prevLineNumber = inst.getLineNumber()!!
             visitLabel(inst.getLableOrPut().value, inst.getLineNumber())
         }
         val frame = StackFrame.getFrameOrPut(inst.cursor).merge()
@@ -431,6 +434,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitStore(type: SlotType, slot: Int, frame: StackFrame) {
+        SlotType.delLiteral(slot)
         when (type) {
             in SlotType.BYTE..SlotType.INT -> {
                 mthVisit.visitVarInsn(jvmOpcodes.ISTORE, slot)
@@ -463,7 +467,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitReturn(slot: Int, type: SlotType, offset: Int) {
-        val type = visitLoad(slot, type, offset)
+        visitLoad(slot, type, offset)
         when (type) {
             in SlotType.BYTE..SlotType.INT -> {
                 mthVisit.visitInsn(jvmOpcodes.IRETURN)
@@ -487,10 +491,15 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitGoto(dalvikInst: ZeroRegisterDecodedInstruction, offset: Int) {
-        val target = code(dalvikInst.target)?.getLableOrPut()?.value
-                ?: throw DecodeException("${dalvikInst.target} has no lable", offset)
-        mthVisit.visitJumpInsn(jvmOpcodes.GOTO, target)
-        StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(offset)
+        val targetCode = code(dalvikInst.target) ?: throw DecodeException("Goto target [${dalvikInst.target}] is error", offset)
+        if (targetCode.instruction.opcode in Opcodes.RETURN..Opcodes.RETURN_OBJECT) {
+            visitReturn(targetCode.instruction.regA(), SlotType.convert(mthNode.getReturnType())!!, offset)
+        } else {
+            val target = targetCode.getLableOrPut().value
+            mthVisit.visitJumpInsn(jvmOpcodes.GOTO, target)
+            StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(offset)
+        }
+
     }
 
     private fun visitGetField(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {

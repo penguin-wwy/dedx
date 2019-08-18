@@ -54,6 +54,7 @@ enum class SlotType {
         fun setLiteral(slot: Int, isIndex: Boolean, literal: Long) {
             ConstantValue[slot] = Pair(isIndex, literal)
         }
+        fun delLiteral(slot: Int) = ConstantValue.remove(slot)
     }
 }
 
