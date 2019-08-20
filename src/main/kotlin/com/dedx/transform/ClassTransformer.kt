@@ -1,6 +1,7 @@
 package com.dedx.transform
 
 import com.dedx.dex.struct.ClassNode
+import com.dedx.dex.struct.MethodNode
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.FieldVisitor
 import org.objectweb.asm.Opcodes
@@ -27,9 +28,15 @@ class ClassTransformer(val clsNode: ClassNode, val filePath: String = ""): Opcod
         // TODO: set source file
 //        classWriter.visitSource()
 
+        var main: MethodNode? = null
         for (mthNode in clsNode.methods) {
+            if (mthNode.isMain()) {
+                main = mthNode
+                continue
+            }
             MethodTransformer(mthNode, this).visitMethod()
         }
+        if (main != null) MethodTransformer(main, this).visitMethod()
         classWriter.visitEnd()
         return this
     }

@@ -6,6 +6,7 @@ import com.dedx.dex.pass.CFGBuildPass
 import com.dedx.dex.pass.DataFlowAnalysisPass
 import com.dedx.dex.pass.DataFlowMethodInfo
 import com.dedx.dex.struct.*
+import com.dedx.dex.struct.type.BasicType
 import com.dedx.tools.Configuration
 import com.dedx.utils.DecodeException
 import com.dedx.utils.TypeConfliction
@@ -33,8 +34,9 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     var entry: BasicBlock? = null
     var dfInfo: DataFlowMethodInfo? = null
     var exits = ArrayList<BasicBlock>()
-    var newestReturn: SlotType? = null
-    var prevLineNumber: Int = 0
+    var newestReturn: SlotType? = null // mark last time invoke-kind's return result
+    var prevLineNumber: Int = 0 // mark last time line number
+    var skipInst = 0 // mark instruction number which skip
 
     val mthVisit = clsTransformer.classWriter.visitMethod(
             mthNode.accFlags, mthNode.mthInfo.name, mthNode.descriptor,
@@ -67,8 +69,14 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
             visitTryCatchBlock()
             prevLineNumber = 0
+            skipInst = 0
             for (inst in mthNode.codeList) {
-                if (inst != null) normalProcess(inst)
+                if (inst == null) continue
+                if (skipInst > 0) {
+                    skipInst--
+                    continue
+                }
+                normalProcess(inst)
             }
             mthVisit.visitMaxs(mthNode.regsCount, mthNode.regsCount)
             mthVisit.visitEnd()
@@ -160,7 +168,6 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         }
         val frame = StackFrame.getFrameOrPut(inst.cursor).merge()
         val dalvikInst = inst.instruction
-        // mark last time invoke-kind's return result
         when (dalvikInst.opcode) {
             in Opcodes.MOVE..Opcodes.MOVE_OBJECT_16 -> {
                 visitMove(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
@@ -193,13 +200,13 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
             }
             Opcodes.ARRAY_LENGTH -> {
-
+                visitArrayLength(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.NEW_INSTANCE -> {
-
+                visitNewInstance(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.NEW_ARRAY -> {
-
+                visitNewArray(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.FILLED_NEW_ARRAY -> {
 
@@ -361,7 +368,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             SlotType.DOUBLE -> {
                 mthVisit.visitVarInsn(jvmOpcodes.DLOAD, slot)
             }
-            SlotType.OBJECT -> {
+            SlotType.OBJECT, SlotType.ARRAY -> {
                 mthVisit.visitVarInsn(jvmOpcodes.ALOAD, slot)
             }
             else -> {
@@ -663,5 +670,45 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         } catch (ex: Exception) {
 
         }
+    }
+
+    private fun visitNewInstance(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        val nextInst = mthNode.getNextInst(offset) ?: throw DecodeException("New-Instance error", offset)
+        if (nextInst.instruction.opcode != Opcodes.INVOKE_DIRECT) throw DecodeException("New-Instance error", offset)
+        skipInst = 1
+        val mthInfo = MethodInfo.fromDex(dexNode, nextInst.instruction.index)
+        mthVisit.visitTypeInsn(jvmOpcodes.NEW, mthInfo.declClass.className())
+        mthVisit.visitInsn(jvmOpcodes.DUP)
+        mthVisit.visitMethodInsn(InvokeType.INVOKESPECIAL, mthInfo.declClass.className(), mthInfo.name, mthInfo.parseSignature(), false)
+        visitStore(SlotType.OBJECT, dalvikInst.regA(), frame)
+    }
+
+    private fun visitArrayLength(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        visitLoad(dalvikInst.regB(), SlotType.ARRAY, offset)
+        mthVisit.visitInsn(jvmOpcodes.ARRAYLENGTH)
+        visitStore(SlotType.INT, dalvikInst.regA(), frame)
+    }
+
+    private fun visitNewArray(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        visitLoad(dalvikInst.regB(), SlotType.INT, offset)
+        val arrayType = dexNode.getType(dalvikInst.index).getAsArrayType() ?: throw DecodeException("New array type error", offset)
+        if (arrayType.subType.getAsObjectType() != null) {
+            mthVisit.visitTypeInsn(jvmOpcodes.ANEWARRAY, arrayType.subType.toString().replace('.', '/'))
+        } else {
+            when (arrayType.subType.getAsBasicType() ?: throw DecodeException("New array is not correct type", offset)) {
+                BasicType.BOOLEAN -> mthVisit.visitIntInsn(jvmOpcodes.NEWARRAY, jvmOpcodes.T_BOOLEAN)
+                BasicType.BYTE -> mthVisit.visitIntInsn(jvmOpcodes.NEWARRAY, jvmOpcodes.T_BYTE)
+                BasicType.CHAR -> mthVisit.visitIntInsn(jvmOpcodes.NEWARRAY, jvmOpcodes.T_CHAR)
+                BasicType.SHORT -> mthVisit.visitIntInsn(jvmOpcodes.NEWARRAY, jvmOpcodes.T_SHORT)
+                BasicType.INT -> mthVisit.visitIntInsn(jvmOpcodes.NEWARRAY, jvmOpcodes.T_INT)
+                BasicType.FLOAT -> mthVisit.visitIntInsn(jvmOpcodes.NEWARRAY, jvmOpcodes.T_FLOAT)
+                BasicType.LONG -> mthVisit.visitIntInsn(jvmOpcodes.NEWARRAY, jvmOpcodes.T_LONG)
+                BasicType.DOUBLE -> mthVisit.visitIntInsn(jvmOpcodes.NEWARRAY, jvmOpcodes.T_DOUBLE)
+                else -> {
+                    throw DecodeException("New array basic type error", offset)
+                }
+            }
+        }
+        visitStore(SlotType.OBJECT, dalvikInst.regA(), frame)
     }
 }

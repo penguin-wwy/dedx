@@ -224,6 +224,13 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
 
     fun getReturnType() = mthInfo.retType
 
+    fun isMain(): Boolean {
+        if (mthInfo.name != "main") return false
+        if (mthInfo.parseSignature() != "([Ljava/lang/String;)V") return false
+        if (!isPublic() || !isStatic()) return false
+        return true
+    }
+
     override fun setValue(key: AttrKey, value: AttrValue) {
         if (key == AttrKey.ANNOTATION) {
             val addSystem = fun(anno: Annotation?) {
