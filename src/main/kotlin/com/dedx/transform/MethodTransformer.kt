@@ -229,10 +229,10 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             in Opcodes.IF_EQ..Opcodes.IF_LE -> visitIfStmt(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
             in Opcodes.IF_EQZ..Opcodes.IF_LEZ -> visitIfStmt(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             in Opcodes.AGET..Opcodes.AGET_SHORT -> {
-
+                visitArrayOp(dalvikInst as ThreeRegisterDecodedInstruction, frame, inst.cursor)
             }
             in Opcodes.APUT..Opcodes.APUT_SHORT -> {
-
+                visitArrayOp(dalvikInst as ThreeRegisterDecodedInstruction, frame, inst.cursor)
             }
             in Opcodes.IGET..Opcodes.IGET_SHORT -> {}
             in Opcodes.IPUT..Opcodes.IPUT_SHORT -> {}
@@ -722,5 +722,54 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         visitLoad(dalvikInst.regB(), SlotType.OBJECT, offset)
         mthVisit.visitTypeInsn(jvmOpcodes.INSTANCEOF, dexNode.getType(dalvikInst.index).toString().replace('.', '/'))
         visitStore(SlotType.INT, dalvikInst.regA(), frame)
+    }
+
+    private fun visitArrayOp(dalvikInst: ThreeRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        visitLoad(dalvikInst.regB(), SlotType.OBJECT, offset)
+        visitLoad(dalvikInst.regC(), SlotType.INT, offset)
+        when (dalvikInst.opcode) {
+            Opcodes.AGET -> {
+                mthVisit.visitInsn(jvmOpcodes.IALOAD)
+                visitStore(SlotType.INT, dalvikInst.regA(), frame)
+            }
+            Opcodes.AGET_WIDE -> {
+
+            }
+            Opcodes.AGET_OBJECT -> {
+                mthVisit.visitInsn(jvmOpcodes.AALOAD)
+                visitStore(SlotType.OBJECT, dalvikInst.regA(), frame)
+            }
+            Opcodes.AGET_BOOLEAN, Opcodes.AGET_BYTE, Opcodes.AGET_CHAR -> {
+                mthVisit.visitInsn(jvmOpcodes.BALOAD)
+                visitStore(SlotType.BYTE, dalvikInst.regA(), frame)
+            }
+            Opcodes.AGET_SHORT -> {
+                mthVisit.visitInsn(jvmOpcodes.SALOAD)
+                visitStore(SlotType.SHORT, dalvikInst.regA(), frame)
+            }
+            Opcodes.APUT -> {
+                visitLoad(dalvikInst.regA(), SlotType.INT, offset)
+                mthVisit.visitInsn(jvmOpcodes.IASTORE)
+            }
+            Opcodes.APUT -> {
+                visitLoad(dalvikInst.regA(), SlotType.INT, offset)
+                mthVisit.visitInsn(jvmOpcodes.IASTORE)
+            }
+            Opcodes.APUT_WIDE -> {
+
+            }
+            Opcodes.APUT_OBJECT -> {
+                visitLoad(dalvikInst.regA(), SlotType.OBJECT, offset)
+                mthVisit.visitInsn(jvmOpcodes.AASTORE)
+            }
+            Opcodes.APUT_BOOLEAN, Opcodes.APUT_BYTE, Opcodes.APUT_CHAR -> {
+                visitLoad(dalvikInst.regA(), SlotType.BYTE, offset)
+                mthVisit.visitInsn(jvmOpcodes.BASTORE)
+            }
+            Opcodes.APUT_SHORT -> {
+                visitLoad(dalvikInst.regA(), SlotType.SHORT, offset)
+                mthVisit.visitInsn(jvmOpcodes.SASTORE)
+            }
+        }
     }
 }
