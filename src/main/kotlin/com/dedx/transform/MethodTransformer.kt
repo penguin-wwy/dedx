@@ -194,10 +194,10 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 visitMonitor(false, dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.CHECK_CAST -> {
-
+                visitCheckCast(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.INSTANCE_OF -> {
-
+                visitInstanceOf(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.ARRAY_LENGTH -> {
                 visitArrayLength(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
@@ -710,5 +710,17 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             }
         }
         visitStore(SlotType.OBJECT, dalvikInst.regA(), frame)
+    }
+
+    private fun visitCheckCast(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        visitLoad(dalvikInst.regA(), SlotType.OBJECT, offset)
+        mthVisit.visitTypeInsn(jvmOpcodes.CHECKCAST, dexNode.getType(dalvikInst.index).toString().replace('.', '/'))
+        visitStore(SlotType.OBJECT, dalvikInst.regA(), frame)
+    }
+
+    private fun visitInstanceOf(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        visitLoad(dalvikInst.regB(), SlotType.OBJECT, offset)
+        mthVisit.visitTypeInsn(jvmOpcodes.INSTANCEOF, dexNode.getType(dalvikInst.index).toString().replace('.', '/'))
+        visitStore(SlotType.INT, dalvikInst.regA(), frame)
     }
 }
