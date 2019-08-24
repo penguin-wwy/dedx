@@ -8,7 +8,11 @@ open class ObjectType(val typeName: String) {
         return typeName == other.typeName
     }
 
-    fun descriptor() = "L${typeName.replace('.', '/')};"
+    fun descriptor() = "L${nameWithSlash()};"
+
+    fun nameWithDot() = typeName
+
+    fun nameWithSlash() = typeName.replace('.', '/')
 
     override fun hashCode(): Int {
         return toString().hashCode()
