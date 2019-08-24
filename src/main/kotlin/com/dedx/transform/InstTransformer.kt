@@ -2,6 +2,7 @@ package com.dedx.transform
 
 import com.dedx.dex.struct.FieldInfo
 import com.dedx.dex.struct.MethodInfo
+import com.dedx.tools.Configuration
 import java.util.*
 
 class InstTransformer(val mthTransformer: MethodTransformer) {
@@ -12,6 +13,9 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
     fun removeJvmInst(jvmInst: JvmInst) = jvmInstList.remove(jvmInst)
 
     fun visitJvmInst() {
+        if (Configuration.optLevel == Configuration.NormalOpt) {
+            // TODO
+        }
         for (jvmInst in jvmInstList) {
             jvmInst.visitLabel(this)
             jvmInst.visitInst(this)

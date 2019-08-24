@@ -95,9 +95,7 @@ class LiteralInst(override val opcodes: Int, override var label: Label?, val lit
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         when (opcodes) {
-            Opcodes.LDC -> {
-
-            }
+            Opcodes.LDC -> visitLDCInst(transformer.methodVisitor())
         }
     }
 
@@ -112,7 +110,7 @@ class LiteralInst(override val opcodes: Int, override var label: Label?, val lit
 class TypeInst(override val opcodes: Int, override var label: Label?, val typeString: String): JvmInst {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        transformer.methodVisitor().visitTypeInsn(opcodes, typeString)
     }
 }
 
