@@ -149,7 +149,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         }
     }
 
-    fun slotNum(regNum: Int): Int {
+    private fun slotNum(regNum: Int): Int {
         if (mthNode.argsList.isEmpty()) {
             return regNum
         }
@@ -179,30 +179,30 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         return null
     }
 
-    fun pushSingleInst(opcodes: Int)
+    private fun pushSingleInst(opcodes: Int)
             = jvmInstManager.pushJvmInst(JvmInst.CreateSingleInst(opcodes, getStartJvmLabel(), getStartJvmLine()))
-    fun pushSlotInst(opcodes: Int, slot: Int)
+    private fun pushSlotInst(opcodes: Int, slot: Int)
             = jvmInstManager.pushJvmInst(JvmInst.CreateSlotInst(opcodes, slot, getStartJvmLabel(), getStartJvmLine()))
-    fun pushIntInst(opcodes: Int, number: Int)
+    private fun pushIntInst(opcodes: Int, number: Int)
             = jvmInstManager.pushJvmInst(JvmInst.CreateIntInst(opcodes, number, getStartJvmLabel(), getStartJvmLine()))
-    fun pushLiteralInst(opcodes: Int, literal: Long, type: SlotType)
+    private fun pushLiteralInst(opcodes: Int, literal: Long, type: SlotType)
             = jvmInstManager.pushJvmInst(JvmInst.CreateLiteralInst(opcodes, literal, type, getStartJvmLabel(), getStartJvmLine()))
-    fun pushTypeInst(opcodes: Int, type: String)
+    private fun pushTypeInst(opcodes: Int, type: String)
             = jvmInstManager.pushJvmInst(JvmInst.CreateTypeInst(opcodes, type, getStartJvmLabel(), getStartJvmLine()))
-    fun pushConstantInst(opcodes: Int, constIndex: Int)
+    private fun pushConstantInst(opcodes: Int, constIndex: Int)
             = jvmInstManager.pushJvmInst(JvmInst.CreateConstantInst(opcodes, constIndex, getStartJvmLabel(), getStartJvmLine()))
-    fun pushInvokeInst(invokeType: Int, mthIndex: Int)
+    private fun pushInvokeInst(invokeType: Int, mthIndex: Int)
             = jvmInstManager.pushJvmInst(JvmInst.CreateInvokeInst(invokeType, invokeType, mthIndex, getStartJvmLabel(), getStartJvmLine()))
-    fun pushJumpInst(opcodes: Int, target: Label)
+    private fun pushJumpInst(opcodes: Int, target: Label)
             = jvmInstManager.pushJvmInst(JvmInst.CreateJumpInst(opcodes, target, getStartJvmLabel(), getStartJvmLine()))
-    fun pushFieldInst(opcodes: Int, fieldIndex: Int)
+    private fun pushFieldInst(opcodes: Int, fieldIndex: Int)
             = jvmInstManager.pushJvmInst(JvmInst.CreateFieldInst(opcodes, fieldIndex, getStartJvmLabel(), getStartJvmLine()))
 
-    fun DecodedInstruction.regA() = slotNum(a)
-    fun DecodedInstruction.regB() = slotNum(b)
-    fun DecodedInstruction.regC() = slotNum(c)
-    fun DecodedInstruction.regD() = slotNum(d)
-    fun DecodedInstruction.regE() = slotNum(e)
+    private fun DecodedInstruction.regA() = slotNum(a)
+    private fun DecodedInstruction.regB() = slotNum(b)
+    private fun DecodedInstruction.regC() = slotNum(c)
+    private fun DecodedInstruction.regD() = slotNum(d)
+    private fun DecodedInstruction.regE() = slotNum(e)
 
     private fun normalProcess(inst: InstNode) {
 
