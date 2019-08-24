@@ -23,7 +23,12 @@ enum class SlotType {
     ARRAY;
 
     companion object {
-        private val ConstantValue = HashMap<Int, Pair<Boolean/*is constant pool index*/, Long>>()
+        const val isValue = 1
+        const val isRawBits = 2
+        const val isStrIndex = 4
+        const val isTypeIndex = 8
+
+        private val ConstantValue = HashMap<Int, Pair<Int/*mark this is a value/index */, Long>>()
 
         fun initConstantValue() = ConstantValue.clear()
 
@@ -48,11 +53,25 @@ enum class SlotType {
             }
         }
 
-        fun isConstantPoolIndex(slot: Int) = ConstantValue[slot]?.first ?: false
-        fun isConstantPoolLiteral(slot: Int) = !(ConstantValue[slot]?.first ?: true)
+        fun isConstantPoolIndex(slot: Int): Boolean {
+            val type = ConstantValue[slot]?.first ?: return false
+            return type >= 4
+        }
+        fun isConstantPoolLiteral(slot: Int): Boolean {
+            val type = ConstantValue[slot]?.first ?: return false
+            return type < 4
+        }
+        fun isStringIndex(slot: Int): Boolean {
+            val type = ConstantValue[slot]?.first ?: return false
+            return (type and 4) != 0
+        }
+        fun isTypeIndex(slot: Int): Boolean {
+            val type = ConstantValue[slot]?.first ?: return false
+            return (type and 8) != 0
+        }
         fun getLiteral(slot: Int) = ConstantValue[slot]?.second ?: throw DecodeException("No constant value in [$slot]")
-        fun setLiteral(slot: Int, isIndex: Boolean, literal: Long) {
-            ConstantValue[slot] = Pair(isIndex, literal)
+        fun setLiteral(slot: Int, literal: Long, whichType: Int) {
+            ConstantValue[slot] = Pair(whichType, literal)
         }
         fun delLiteral(slot: Int) = ConstantValue.remove(slot)
     }

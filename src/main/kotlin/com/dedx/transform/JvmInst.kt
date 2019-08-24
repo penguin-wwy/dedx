@@ -3,6 +3,7 @@ package com.dedx.transform
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
+import org.objectweb.asm.Type
 
 interface JvmInst: Opcodes {
     val opcodes: Int
@@ -103,6 +104,7 @@ class LiteralInst(override val opcodes: Int, override var label: Label?, val lit
         when (type) {
             SlotType.INT -> mthVisitor.visitLdcInsn(literal.toInt())
             SlotType.FLOAT -> mthVisitor.visitLdcInsn(Float.fromBits(literal.toInt()))
+            SlotType.DOUBLE -> mthVisitor.visitLdcInsn(Double.fromBits(literal))
         }
     }
 }
@@ -110,7 +112,11 @@ class LiteralInst(override val opcodes: Int, override var label: Label?, val lit
 class TypeInst(override val opcodes: Int, override var label: Label?, val typeString: String): JvmInst {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
-        transformer.methodVisitor().visitTypeInsn(opcodes, typeString)
+        val mthVisitor = transformer.methodVisitor()
+        when (opcodes) {
+            Opcodes.LDC -> mthVisitor.visitLdcInsn(Type.getType(typeString))
+            else -> mthVisitor.visitTypeInsn(opcodes, typeString)
+        }
     }
 }
 

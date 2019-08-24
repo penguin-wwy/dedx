@@ -350,23 +350,27 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         when (dalvikInst.opcode) {
             Opcodes.CONST_4 -> {
                 frame.setSlot(slot, SlotType.BYTE)
-                SlotType.setLiteral(slot, false, dalvikInst.literalByte.toLong())
+                SlotType.setLiteral(slot, dalvikInst.literalByte.toLong(), SlotType.isValue)
             }
             Opcodes.CONST_16 -> {
                 frame.setSlot(slot, SlotType.SHORT)
-                SlotType.setLiteral(slot, false, dalvikInst.literalUnit.toLong())
+                SlotType.setLiteral(slot, dalvikInst.literalUnit.toLong(), SlotType.isValue)
             }
             in Opcodes.CONST..Opcodes.CONST_HIGH16 -> {
                 frame.setSlot(slot, SlotType.INT)
-                SlotType.setLiteral(slot, false, dalvikInst.literalInt.toLong())
+                SlotType.setLiteral(slot, dalvikInst.literalInt.toLong(), SlotType.isValue)
             }
             in Opcodes.CONST_WIDE_16..Opcodes.CONST_WIDE_HIGH16 -> {
                 frame.setSlot(slot, SlotType.LONG) // also double type
-                SlotType.setLiteral(slot, false, dalvikInst.literal)
+                SlotType.setLiteral(slot, dalvikInst.literal, SlotType.isValue)
             }
-            Opcodes.CONST_STRING, Opcodes.CONST_STRING_JUMBO, Opcodes.CONST_CLASS -> {
+            Opcodes.CONST_STRING, Opcodes.CONST_STRING_JUMBO -> {
                 frame.setSlot(slot, SlotType.INT) // constant pool index as int type
-                SlotType.setLiteral(slot, true, dalvikInst.index.toLong())
+                SlotType.setLiteral(slot, dalvikInst.index.toLong(), SlotType.isStrIndex)
+            }
+            Opcodes.CONST_CLASS -> {
+                frame.setSlot(slot, SlotType.INT) // constant pool index as int type
+                SlotType.setLiteral(slot, dalvikInst.index.toLong(), SlotType.isTypeIndex)
             }
         }
     }
@@ -423,57 +427,56 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         try {
             val literal = SlotType.getLiteral(slot)
             if (SlotType.isConstantPoolLiteral(slot)) {
-                visitPushOrLdc(false, literal, slotType, offset)
+                visitPushOrLdc(literal, slotType, offset)
             }
-            if (SlotType.isConstantPoolIndex(slot)) {
-                visitPushOrLdc(true, literal, slotType, offset)
+            if (SlotType.isStringIndex(slot)) {
+                pushConstantInst(jvmOpcodes.LDC, literal.toInt())
+            }
+            if (SlotType.isTypeIndex(slot)) {
+                pushTypeInst(jvmOpcodes.LDC, dexNode.getType(literal.toInt()).descriptor())
             }
         } catch (de: DecodeException) {
             throw DecodeException("LDC instruction error", offset, de)
         }
     }
 
-    private fun visitPushOrLdc(isIndex: Boolean, literal: Long, slotType: SlotType, offset: Int) {
-        if (isIndex) {
-            pushConstantInst(jvmOpcodes.LDC, literal.toInt())
-        } else {
-            when (slotType) {
-                SlotType.BYTE -> pushIntInst(jvmOpcodes.BIPUSH, literal.toInt())
-                SlotType.SHORT -> pushIntInst(jvmOpcodes.SIPUSH, literal.toInt())
-                SlotType.INT -> {
-                    val intLiteral = literal.toInt()
-                    if (intLiteral in -1..5) {
-                        pushSingleInst(jvmOpcodes.ICONST_M1 + intLiteral + 1)
-                    } else {
-                        pushLiteralInst(jvmOpcodes.LDC, literal, SlotType.INT)
-                    }
+    private fun visitPushOrLdc(literal: Long, slotType: SlotType, offset: Int) {
+        when (slotType) {
+            SlotType.BYTE -> pushIntInst(jvmOpcodes.BIPUSH, literal.toInt())
+            SlotType.SHORT -> pushIntInst(jvmOpcodes.SIPUSH, literal.toInt())
+            SlotType.INT -> {
+                val intLiteral = literal.toInt()
+                if (intLiteral in -1..5) {
+                    pushSingleInst(jvmOpcodes.ICONST_M1 + intLiteral + 1)
+                } else {
+                    pushLiteralInst(jvmOpcodes.LDC, literal, SlotType.INT)
                 }
-                SlotType.FLOAT -> {
-                    val floatBits = literal.toInt()
-                    when (floatBits) {
-                        0.0f.toRawBits() -> pushSingleInst(jvmOpcodes.FCONST_0)
-                        1.0f.toRawBits() -> pushSingleInst(jvmOpcodes.FCONST_1)
-                        2.0f.toRawBits() -> pushSingleInst(jvmOpcodes.FCONST_2)
-                        else -> pushLiteralInst(jvmOpcodes.LDC, literal, SlotType.FLOAT)
-                    }
+            }
+            SlotType.FLOAT -> {
+                val floatBits = literal.toInt()
+                when (floatBits) {
+                    0.0f.toRawBits() -> pushSingleInst(jvmOpcodes.FCONST_0)
+                    1.0f.toRawBits() -> pushSingleInst(jvmOpcodes.FCONST_1)
+                    2.0f.toRawBits() -> pushSingleInst(jvmOpcodes.FCONST_2)
+                    else -> pushLiteralInst(jvmOpcodes.LDC, literal, SlotType.FLOAT)
                 }
-                SlotType.LONG -> {
-                    when (literal) {
-                        0L -> pushSingleInst(jvmOpcodes.LCONST_0)
-                        1L -> pushSingleInst(jvmOpcodes.LCONST_1)
-                        else -> pushLiteralInst(jvmOpcodes.LDC, literal, SlotType.LONG)
-                    }
+            }
+            SlotType.LONG -> {
+                when (literal) {
+                    0L -> pushSingleInst(jvmOpcodes.LCONST_0)
+                    1L -> pushSingleInst(jvmOpcodes.LCONST_1)
+                    else -> pushLiteralInst(jvmOpcodes.LDC, literal, SlotType.LONG)
                 }
-                SlotType.DOUBLE -> {
-                    when (literal) {
-                        0.0.toRawBits() -> pushSingleInst(jvmOpcodes.DCONST_0)
-                        1.0.toRawBits() -> pushSingleInst(jvmOpcodes.DCONST_1)
-                        else -> pushLiteralInst(jvmOpcodes.LDC, literal, SlotType.DOUBLE)
-                    }
+            }
+            SlotType.DOUBLE -> {
+                when (literal) {
+                    0.0.toRawBits() -> pushSingleInst(jvmOpcodes.DCONST_0)
+                    1.0.toRawBits() -> pushSingleInst(jvmOpcodes.DCONST_1)
+                    else -> pushLiteralInst(jvmOpcodes.LDC, literal, SlotType.DOUBLE)
                 }
-                else -> {
-                    throw DecodeException("Const type error", offset)
-                }
+            }
+            else -> {
+                throw DecodeException("Const type error", offset)
             }
         }
     }
@@ -615,11 +618,11 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 StackFrame.checkType(SlotType.INT, offset, regB)
             } // because of missing type information for constants, can't check type for constants
             if (dalvikInst.opcode == Opcodes.RSUB_INT || dalvikInst.opcode == Opcodes.RSUB_INT_LIT8) {
-                visitPushOrLdc(false, dalvikInst.literalInt.toLong(), SlotType.INT, offset)
+                visitPushOrLdc(dalvikInst.literalInt.toLong(), SlotType.INT, offset)
                 visitLoad(regB, SlotType.SHORT, offset)
             } else {
                 visitLoad(regB, SlotType.INT, offset)
-                visitPushOrLdc(false, dalvikInst.literalInt.toLong(), SlotType.INT, offset)
+                visitPushOrLdc(dalvikInst.literalInt.toLong(), SlotType.INT, offset)
             }
             when (dalvikInst.opcode) {
                 Opcodes.ADD_INT_LIT8, Opcodes.ADD_INT_LIT16 -> pushSingleInst(jvmOpcodes.IADD)
