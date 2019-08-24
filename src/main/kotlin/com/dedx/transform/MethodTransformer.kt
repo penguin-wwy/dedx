@@ -197,6 +197,8 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             = jvmInstManager.pushJvmInst(JvmInst.CreateJumpInst(opcodes, target, getStartJvmLabel(), getStartJvmLine()))
     private fun pushFieldInst(opcodes: Int, fieldIndex: Int)
             = jvmInstManager.pushJvmInst(JvmInst.CreateFieldInst(opcodes, fieldIndex, getStartJvmLabel(), getStartJvmLine()))
+    private fun pushShadowInst(opcodes: Int, literal: Long?, vararg regNum: Int)
+            = jvmInstManager.pushJvmInst(JvmInst.CreateShadowInst(opcodes, literal, regNum, getStartJvmLabel(), getStartJvmLine()))
 
     private fun DecodedInstruction.regA() = slotNum(a)
     private fun DecodedInstruction.regB() = slotNum(b)
@@ -278,10 +280,8 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             in Opcodes.APUT..Opcodes.APUT_SHORT -> {
                 visitArrayOp(dalvikInst as ThreeRegisterDecodedInstruction, frame, inst.cursor)
             }
-            in Opcodes.IGET..Opcodes.IGET_SHORT -> {}
-            in Opcodes.IPUT..Opcodes.IPUT_SHORT -> {}
-            in Opcodes.SGET..Opcodes.SGET_SHORT -> visitGetField(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
-            in Opcodes.SPUT..Opcodes.SPUT_SHORT -> {}
+            in Opcodes.IGET..Opcodes.IPUT_SHORT -> visitInstanceField(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
+            in Opcodes.SGET..Opcodes.SPUT_SHORT -> visitStaticField(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             Opcodes.INVOKE_VIRTUAL -> newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKEVIRTUAL, frame, inst.cursor)
             Opcodes.INVOKE_SUPER -> {
                 // TODO
@@ -297,7 +297,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             Opcodes.INVOKE_STATIC_RANGE -> {}
             Opcodes.INVOKE_INTERFACE_RANGE -> {}
             in Opcodes.NEG_INT..Opcodes.INT_TO_SHORT -> {}
-            in Opcodes.ADD_INT..Opcodes.REM_DOUBLE -> {}
+            in Opcodes.ADD_INT..Opcodes.REM_DOUBLE -> visitBinOp(dalvikInst as ThreeRegisterDecodedInstruction, frame, inst.cursor)
             in Opcodes.ADD_INT_2ADDR..Opcodes.USHR_INT_2ADDR,
             in Opcodes.ADD_FLOAT_2ADDR..Opcodes.REM_FLOAT_2ADDR -> {
                 visitBinOp2Addr(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
@@ -550,19 +550,27 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
     }
 
-    private fun visitGetField(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+    private fun visitInstanceField(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
         val fieldInfo = FieldInfo.fromDex(dexNode, dalvikInst.index)
-        if (fieldInfo.declClass != mthNode.parent.clsInfo) { // determine this field in parent class
-            pushFieldInst(jvmOpcodes.GETSTATIC, dalvikInst.index)
+        visitLoad(dalvikInst.regB(), SlotType.OBJECT, offset)
+        if (dalvikInst.opcode < Opcodes.IPUT) {
+            pushFieldInst(jvmOpcodes.GETFIELD, dalvikInst.index)
+            visitStore(SlotType.convert(fieldInfo.type)!!, dalvikInst.regA(), frame)
         } else {
-            val fieldNode = mthNode.parent.searchField(fieldInfo) ?: throw DecodeException("Get field $fieldInfo failed.", offset)
-            if (fieldNode.isStatic()) {
-                pushFieldInst(jvmOpcodes.GETSTATIC, dalvikInst.index)
-            } else {
-                pushFieldInst(jvmOpcodes.GETFIELD, dalvikInst.index)
-            }
+            visitLoad(dalvikInst.regA(), SlotType.convert(fieldInfo.type)!!, offset)
+            pushFieldInst(jvmOpcodes.PUTFIELD, dalvikInst.index)
         }
-        visitStore(SlotType.convert(fieldInfo.type)!!, dalvikInst.regA(), frame)
+    }
+
+    private fun visitStaticField(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        val fieldInfo = FieldInfo.fromDex(dexNode, dalvikInst.index)
+        if (dalvikInst.opcode < Opcodes.SPUT) {
+            pushFieldInst(jvmOpcodes.GETSTATIC, dalvikInst.index)
+            visitStore(SlotType.convert(fieldInfo.type)!!, dalvikInst.regA(), frame)
+        } else {
+            visitLoad(dalvikInst.regA(), SlotType.convert(fieldInfo.type)!!, offset)
+            pushFieldInst(jvmOpcodes.PUTSTATIC, dalvikInst.index)
+        }
     }
 
     private fun visitBinOp2Addr(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
@@ -607,7 +615,34 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitBinOpWide2Addr(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        var type = SlotType.LONG
+        if (dalvikInst.opcode >= Opcodes.ADD_DOUBLE_2ADDR) {
+            type = SlotType.DOUBLE
+        }
+        val regA = dalvikInst.regA()
+        val regB = dalvikInst.regB()
+        visitLoad(regA, type, offset)
+        visitLoad(regB, type, offset)
+        when (dalvikInst.opcode) {
+            Opcodes.ADD_LONG_2ADDR -> pushSingleInst(jvmOpcodes.LADD)
+            Opcodes.SUB_LONG_2ADDR -> pushSingleInst(jvmOpcodes.LSUB)
+            Opcodes.MUL_LONG_2ADDR -> pushSingleInst(jvmOpcodes.LMUL)
+            Opcodes.DIV_LONG_2ADDR -> pushSingleInst(jvmOpcodes.LDIV)
+            Opcodes.REM_LONG_2ADDR -> pushSingleInst(jvmOpcodes.LREM)
+            Opcodes.AND_LONG_2ADDR -> pushSingleInst(jvmOpcodes.LAND)
+            Opcodes.OR_LONG_2ADDR -> pushSingleInst(jvmOpcodes.LOR)
+            Opcodes.XOR_LONG_2ADDR -> pushSingleInst(jvmOpcodes.LXOR)
+            Opcodes.SHL_LONG_2ADDR -> pushSingleInst(jvmOpcodes.LSHL)
+            Opcodes.SHR_LONG_2ADDR -> pushSingleInst(jvmOpcodes.LSHR)
+            Opcodes.USHR_LONG_2ADDR -> pushSingleInst(jvmOpcodes.LUSHR)
 
+            Opcodes.ADD_DOUBLE_2ADDR -> pushSingleInst(jvmOpcodes.DADD)
+            Opcodes.SUB_DOUBLE_2ADDR -> pushSingleInst(jvmOpcodes.DSUB)
+            Opcodes.MUL_DOUBLE_2ADDR -> pushSingleInst(jvmOpcodes.DMUL)
+            Opcodes.DIV_DOUBLE_2ADDR -> pushSingleInst(jvmOpcodes.DDIV)
+            Opcodes.REM_DOUBLE_2ADDR -> pushSingleInst(jvmOpcodes.DREM)
+        }
+        visitStore(type, regA, frame)
     }
 
     private fun visitBinOp(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
@@ -646,6 +681,60 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 else -> throw ex
             }
         }
+    }
+
+    private fun visitBinOp(dalvikInst: ThreeRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        val regA = dalvikInst.regA()
+        val regB = dalvikInst.regB()
+        val regC = dalvikInst.regC()
+        var type = SlotType.INT
+        if (dalvikInst.opcode >= Opcodes.ADD_LONG && dalvikInst.opcode <= Opcodes.USHR_LONG) {
+            type = SlotType.LONG
+        } else if (dalvikInst.opcode >= Opcodes.ADD_FLOAT && dalvikInst.opcode <= Opcodes.REM_FLOAT) {
+            type = SlotType.FLOAT
+        } else if (dalvikInst.opcode >= Opcodes.ADD_DOUBLE && dalvikInst.opcode <= Opcodes.REM_DOUBLE) {
+            type = SlotType.DOUBLE
+        }
+        visitLoad(regB, type, offset)
+        visitLoad(regC, type, offset)
+        when (dalvikInst.opcode) {
+            Opcodes.ADD_INT -> pushSingleInst(jvmOpcodes.IADD)
+            Opcodes.SUB_INT -> pushSingleInst(jvmOpcodes.ISUB)
+            Opcodes.MUL_INT -> pushSingleInst(jvmOpcodes.IMUL)
+            Opcodes.DIV_INT -> pushSingleInst(jvmOpcodes.IDIV)
+            Opcodes.REM_INT -> pushSingleInst(jvmOpcodes.IREM)
+            Opcodes.AND_INT -> pushSingleInst(jvmOpcodes.IAND)
+            Opcodes.OR_INT -> pushSingleInst(jvmOpcodes.IOR)
+            Opcodes.XOR_INT -> pushSingleInst(jvmOpcodes.IXOR)
+            Opcodes.SHL_INT -> pushSingleInst(jvmOpcodes.ISHL)
+            Opcodes.SHR_INT -> pushSingleInst(jvmOpcodes.ISHR)
+            Opcodes.USHR_INT -> pushSingleInst(jvmOpcodes.IUSHR)
+
+            Opcodes.ADD_LONG -> pushSingleInst(jvmOpcodes.LADD)
+            Opcodes.SUB_LONG -> pushSingleInst(jvmOpcodes.LSUB)
+            Opcodes.MUL_LONG -> pushSingleInst(jvmOpcodes.LMUL)
+            Opcodes.DIV_LONG -> pushSingleInst(jvmOpcodes.LDIV)
+            Opcodes.REM_LONG -> pushSingleInst(jvmOpcodes.LREM)
+            Opcodes.AND_LONG -> pushSingleInst(jvmOpcodes.LAND)
+            Opcodes.OR_LONG -> pushSingleInst(jvmOpcodes.LOR)
+            Opcodes.XOR_LONG -> pushSingleInst(jvmOpcodes.LXOR)
+            Opcodes.SHL_LONG -> pushSingleInst(jvmOpcodes.LSHL)
+            Opcodes.SHR_LONG -> pushSingleInst(jvmOpcodes.LSHR)
+            Opcodes.USHR_LONG -> pushSingleInst(jvmOpcodes.LUSHR)
+
+            Opcodes.ADD_FLOAT -> pushSingleInst(jvmOpcodes.FADD)
+            Opcodes.SUB_FLOAT -> pushSingleInst(jvmOpcodes.FSUB)
+            Opcodes.MUL_FLOAT -> pushSingleInst(jvmOpcodes.FMUL)
+            Opcodes.DIV_FLOAT -> pushSingleInst(jvmOpcodes.FDIV)
+            Opcodes.REM_FLOAT -> pushSingleInst(jvmOpcodes.FREM)
+
+            Opcodes.ADD_DOUBLE -> pushSingleInst(jvmOpcodes.DADD)
+            Opcodes.SUB_DOUBLE -> pushSingleInst(jvmOpcodes.DSUB)
+            Opcodes.MUL_DOUBLE -> pushSingleInst(jvmOpcodes.DMUL)
+            Opcodes.DIV_DOUBLE -> pushSingleInst(jvmOpcodes.DDIV)
+            Opcodes.REM_DOUBLE -> pushSingleInst(jvmOpcodes.DREM)
+        }
+        visitStore(type, regA, frame)
     }
 
     private fun visitMove(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
@@ -778,7 +867,8 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 visitStore(SlotType.INT, dalvikInst.regA(), frame)
             }
             Opcodes.AGET_WIDE -> {
-
+                pushShadowInst(jvmOpcodes.LALOAD, null, dalvikInst.regA())
+                pushShadowInst(jvmOpcodes.LSTORE, null, dalvikInst.regB())
             }
             Opcodes.AGET_OBJECT -> {
                 pushSingleInst(jvmOpcodes.AALOAD)
@@ -796,12 +886,9 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 visitLoad(dalvikInst.regA(), SlotType.INT, offset)
                 pushSingleInst(jvmOpcodes.IASTORE)
             }
-            Opcodes.APUT -> {
-                visitLoad(dalvikInst.regA(), SlotType.INT, offset)
-                pushSingleInst(jvmOpcodes.IASTORE)
-            }
             Opcodes.APUT_WIDE -> {
-
+                pushShadowInst(jvmOpcodes.LLOAD, null, dalvikInst.regA())
+                pushShadowInst(jvmOpcodes.LASTORE, null, dalvikInst.regA())
             }
             Opcodes.APUT_OBJECT -> {
                 visitLoad(dalvikInst.regA(), SlotType.OBJECT, offset)

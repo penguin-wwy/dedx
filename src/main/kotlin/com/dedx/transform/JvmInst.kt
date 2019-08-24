@@ -62,6 +62,10 @@ interface JvmInst: Opcodes {
         fun CreateFieldInst(opcodes: Int, fieldIndex: Int, label: Label? = null, lineNumber: Int? = null): JvmInst {
             return FieldInst(opcodes, label, fieldIndex).setLineNumber(lineNumber)
         }
+
+        fun CreateShadowInst(opcodes: Int, literal: Long?, regs: IntArray, label: Label? = null, lineNumber: Int? = null): JvmInst {
+            return ShadowInst(opcodes, label, literal, regs).setLineNumber(lineNumber)
+        }
     }
 }
 
@@ -151,6 +155,13 @@ class FieldInst(override val opcodes: Int, override var label: Label?, val field
     override fun visitInst(transformer: InstTransformer) {
         val fieldInfo = transformer.fieldInfo(fieldIndex)
         transformer.methodVisitor()
-                .visitFieldInsn(jvmOpcodes.GETSTATIC, fieldInfo.declClass.className(), fieldInfo.name, fieldInfo.type.descriptor())
+                .visitFieldInsn(opcodes, fieldInfo.declClass.className(), fieldInfo.name, fieldInfo.type.descriptor())
+    }
+}
+
+class ShadowInst(override val opcodes: Int, override var label: Label?, val literal: Long?, val regs: IntArray): JvmInst {
+    override var lineNumber: Int? = null
+    override fun visitInst(transformer: InstTransformer) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 }
