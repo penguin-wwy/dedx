@@ -1,5 +1,6 @@
 package com.dedx.transform
 
+import com.dedx.utils.DecodeException
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
@@ -87,6 +88,15 @@ class SlotInst(override val opcodes: Int, override var label: Label?, val slot: 
             }
         }
     }
+
+    fun getExprType() = when (opcodes) {
+        Opcodes.ILOAD, Opcodes.ISTORE -> SlotType.INT
+        Opcodes.FLOAD, Opcodes.FSTORE -> SlotType.FLOAT
+        Opcodes.LLOAD, Opcodes.LSTORE -> SlotType.LONG
+        Opcodes.DLOAD, Opcodes.DSTORE -> SlotType.DOUBLE
+        Opcodes.ALOAD, Opcodes.ASTORE -> SlotType.OBJECT
+        else -> throw DecodeException("Can't get type from SlotInst")
+    }
 }
 
 class IntInst(override val opcodes: Int, override var label: Label?, val number: Int): JvmInst {
@@ -161,7 +171,49 @@ class FieldInst(override val opcodes: Int, override var label: Label?, val field
 
 class ShadowInst(override val opcodes: Int, override var label: Label?, val literal: Long?, val regs: IntArray): JvmInst {
     override var lineNumber: Int? = null
-    override fun visitInst(transformer: InstTransformer) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun visitInst(transformer: InstTransformer) {}
+
+    var mainInst: ShadowInst? = null
+    var salves = ArrayList<ShadowInst>()
+
+    fun isMain() = mainInst == null
+    fun isSalve() = mainInst != null
+
+    fun addSlaveInst(inst: ShadowInst): ShadowInst {
+        salves.add(inst)
+        return this
     }
+
+    fun convert(type: SlotType) = when (opcodes) {
+        Opcodes.LALOAD -> {
+            when (type) {
+                SlotType.LONG -> JvmInst.CreateSingleInst(Opcodes.LALOAD, label, lineNumber)
+                SlotType.DOUBLE -> JvmInst.CreateSingleInst(Opcodes.DALOAD, label, lineNumber)
+                else -> throw DecodeException("ShadowInst convert error")
+            }
+        }
+        Opcodes.LASTORE -> {
+            when (type) {
+                SlotType.LONG -> JvmInst.CreateSingleInst(Opcodes.LASTORE, label, lineNumber)
+                SlotType.DOUBLE -> JvmInst.CreateSingleInst(Opcodes.DASTORE, label, lineNumber)
+                else -> throw DecodeException("ShadowInst convert error")
+            }
+        }
+        Opcodes.LLOAD -> {
+            when (type) {
+                SlotType.LONG -> JvmInst.CreateSlotInst(Opcodes.LLOAD, regs[0], label, lineNumber)
+                SlotType.DOUBLE -> JvmInst.CreateSlotInst(Opcodes.DLOAD, regs[0], label, lineNumber)
+                else -> throw DecodeException("ShadowInst convert error")
+            }
+        }
+        Opcodes.LSTORE -> {
+            when (type) {
+                SlotType.LONG -> JvmInst.CreateSlotInst(Opcodes.LSTORE, regs[0], label, lineNumber)
+                SlotType.DOUBLE -> JvmInst.CreateSlotInst(Opcodes.DSTORE, regs[0], label, lineNumber)
+                else -> throw DecodeException("ShadowInst convert error")
+            }
+        }
+        else -> throw DecodeException("ShadowInst convert error")
+    }
+
 }

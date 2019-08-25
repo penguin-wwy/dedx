@@ -197,8 +197,12 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             = jvmInstManager.pushJvmInst(JvmInst.CreateJumpInst(opcodes, target, getStartJvmLabel(), getStartJvmLine()))
     private fun pushFieldInst(opcodes: Int, fieldIndex: Int)
             = jvmInstManager.pushJvmInst(JvmInst.CreateFieldInst(opcodes, fieldIndex, getStartJvmLabel(), getStartJvmLine()))
-    private fun pushShadowInst(opcodes: Int, literal: Long?, vararg regNum: Int)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateShadowInst(opcodes, literal, regNum, getStartJvmLabel(), getStartJvmLine()))
+    private fun pushShadowInst(opcodes: Int, literal: Long?, vararg regNum: Int): ShadowInst {
+        val shadowInst = JvmInst.CreateShadowInst(opcodes, literal, regNum, getStartJvmLabel(), getStartJvmLine())
+                as ShadowInst
+        jvmInstManager.pushJvmInst(shadowInst)
+        return shadowInst
+    }
 
     private fun DecodedInstruction.regA() = slotNum(a)
     private fun DecodedInstruction.regB() = slotNum(b)
@@ -975,8 +979,10 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 visitStore(SlotType.INT, dalvikInst.regA(), frame)
             }
             Opcodes.AGET_WIDE -> {
-                pushShadowInst(jvmOpcodes.LALOAD, null, dalvikInst.regA())
-                pushShadowInst(jvmOpcodes.LSTORE, null, dalvikInst.regB())
+                val slave = pushShadowInst(jvmOpcodes.LALOAD, null)
+                val master = pushShadowInst(jvmOpcodes.LSTORE, null, dalvikInst.regB())
+                        .addSlaveInst(slave)
+                slave.mainInst = master
             }
             Opcodes.AGET_OBJECT -> {
                 pushSingleInst(jvmOpcodes.AALOAD)
@@ -995,8 +1001,9 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 pushSingleInst(jvmOpcodes.IASTORE)
             }
             Opcodes.APUT_WIDE -> {
-                pushShadowInst(jvmOpcodes.LLOAD, null, dalvikInst.regA())
-                pushShadowInst(jvmOpcodes.LASTORE, null, dalvikInst.regA())
+                val slave = pushShadowInst(jvmOpcodes.LLOAD, null)
+                val master = pushShadowInst(jvmOpcodes.LASTORE, null, dalvikInst.regA()).addSlaveInst(slave)
+                slave.mainInst = master
             }
             Opcodes.APUT_OBJECT -> {
                 visitLoad(dalvikInst.regA(), SlotType.OBJECT, offset)
