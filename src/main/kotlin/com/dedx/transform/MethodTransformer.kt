@@ -296,7 +296,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             Opcodes.INVOKE_DIRECT_RANGE -> {}
             Opcodes.INVOKE_STATIC_RANGE -> {}
             Opcodes.INVOKE_INTERFACE_RANGE -> {}
-            in Opcodes.NEG_INT..Opcodes.INT_TO_SHORT -> {}
+            in Opcodes.NEG_INT..Opcodes.INT_TO_SHORT -> visitUnop(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
             in Opcodes.ADD_INT..Opcodes.REM_DOUBLE -> visitBinOp(dalvikInst as ThreeRegisterDecodedInstruction, frame, inst.cursor)
             in Opcodes.ADD_INT_2ADDR..Opcodes.USHR_INT_2ADDR,
             in Opcodes.ADD_FLOAT_2ADDR..Opcodes.REM_FLOAT_2ADDR -> {
@@ -681,6 +681,114 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 else -> throw ex
             }
         }
+    }
+
+    private fun visitUnop(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        var fromType = SlotType.INT
+        var toType = SlotType.INT
+        var opcodes = 0
+        when (dalvikInst.opcode) {
+            Opcodes.NEG_INT -> {
+                opcodes = jvmOpcodes.INEG
+                fromType = SlotType.INT
+                toType = SlotType.INT
+            }
+            Opcodes.NOT_INT -> {}
+            Opcodes.NEG_LONG -> {
+                opcodes = jvmOpcodes.LNEG
+                fromType = SlotType.LONG
+                toType = SlotType.LONG
+            }
+            Opcodes.NOT_LONG -> {}
+            Opcodes.NEG_FLOAT -> {
+                opcodes = jvmOpcodes.FNEG
+                fromType = SlotType.FLOAT
+                toType = SlotType.FLOAT
+            }
+            Opcodes.NEG_DOUBLE -> {
+                opcodes = jvmOpcodes.DNEG
+                fromType = SlotType.DOUBLE
+                toType = SlotType.DOUBLE
+            }
+            Opcodes.INT_TO_LONG -> {
+                opcodes = jvmOpcodes.I2L
+                fromType = SlotType.INT
+                toType = SlotType.LONG
+            }
+            Opcodes.INT_TO_FLOAT -> {
+                opcodes = jvmOpcodes.I2F
+                fromType = SlotType.INT
+                toType = SlotType.FLOAT
+            }
+            Opcodes.INT_TO_DOUBLE -> {
+                opcodes = jvmOpcodes.I2D
+                fromType = SlotType.INT
+                toType = SlotType.DOUBLE
+            }
+            Opcodes.LONG_TO_INT -> {
+                opcodes = jvmOpcodes.L2I
+                fromType = SlotType.LONG
+                toType = SlotType.INT
+            }
+            Opcodes.LONG_TO_FLOAT -> {
+                opcodes = jvmOpcodes.L2F
+                fromType = SlotType.LONG
+                toType = SlotType.FLOAT
+            }
+            Opcodes.LONG_TO_DOUBLE -> {
+                opcodes = jvmOpcodes.L2D
+                fromType = SlotType.LONG
+                toType = SlotType.DOUBLE
+            }
+            Opcodes.FLOAT_TO_INT -> {
+                opcodes = jvmOpcodes.F2I
+                fromType = SlotType.FLOAT
+                toType = SlotType.INT
+            }
+            Opcodes.FLOAT_TO_LONG -> {
+                opcodes = jvmOpcodes.F2L
+                fromType = SlotType.FLOAT
+                toType = SlotType.LONG
+            }
+            Opcodes.FLOAT_TO_DOUBLE -> {
+                opcodes = jvmOpcodes.F2D
+                fromType = SlotType.FLOAT
+                toType = SlotType.DOUBLE
+            }
+            Opcodes.DOUBLE_TO_INT -> {
+                opcodes = jvmOpcodes.D2I
+                fromType = SlotType.DOUBLE
+                toType = SlotType.INT
+            }
+            Opcodes.DOUBLE_TO_LONG -> {
+                opcodes = jvmOpcodes.D2L
+                fromType = SlotType.DOUBLE
+                toType = SlotType.LONG
+            }
+            Opcodes.DOUBLE_TO_FLOAT -> {
+                opcodes = jvmOpcodes.D2F
+                fromType = SlotType.DOUBLE
+                toType = SlotType.FLOAT
+            }
+            Opcodes.INT_TO_BYTE -> {
+                opcodes = jvmOpcodes.I2B
+                fromType = SlotType.INT
+                toType = SlotType.BYTE
+            }
+            Opcodes.INT_TO_CHAR -> {
+                opcodes = jvmOpcodes.I2C
+                fromType = SlotType.INT
+                toType = SlotType.CHAR
+            }
+            Opcodes.INT_TO_SHORT -> {
+                opcodes = jvmOpcodes.I2S
+                fromType = SlotType.INT
+                toType = SlotType.SHORT
+            }
+        }
+        visitLoad(dalvikInst.regB(), fromType, offset)
+        pushSingleInst(opcodes)
+        visitStore(toType, dalvikInst.regA(), frame)
     }
 
     private fun visitBinOp(dalvikInst: ThreeRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
