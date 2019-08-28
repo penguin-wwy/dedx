@@ -377,6 +377,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 SlotType.setLiteral(slot, dalvikInst.index.toLong(), SlotType.isTypeIndex)
             }
         }
+        pushSingleInst(jvmOpcodes.NOP) // insert NOP inst to keep label in jvmInstList
     }
 
     private fun visitIfStmt(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
@@ -980,7 +981,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             }
             Opcodes.AGET_WIDE -> {
                 val slave = pushShadowInst(jvmOpcodes.LALOAD, null)
-                val master = pushShadowInst(jvmOpcodes.LSTORE, null, dalvikInst.regB())
+                val master = pushShadowInst(jvmOpcodes.LSTORE, null, dalvikInst.regA())
                         .addSlaveInst(slave)
                 slave.mainInst = master
             }
@@ -1001,8 +1002,9 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 pushSingleInst(jvmOpcodes.IASTORE)
             }
             Opcodes.APUT_WIDE -> {
-                val slave = pushShadowInst(jvmOpcodes.LLOAD, null)
-                val master = pushShadowInst(jvmOpcodes.LASTORE, null, dalvikInst.regA()).addSlaveInst(slave)
+                val master = pushShadowInst(jvmOpcodes.LLOAD, null, dalvikInst.regA())
+                val slave = pushShadowInst(jvmOpcodes.LASTORE, null)
+                master.addSlaveInst(slave)
                 slave.mainInst = master
             }
             Opcodes.APUT_OBJECT -> {
