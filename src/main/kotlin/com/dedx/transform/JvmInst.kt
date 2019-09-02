@@ -1,10 +1,15 @@
 package com.dedx.transform
 
+import com.android.dx.io.instructions.FillArrayDataPayloadDecodedInstruction
 import com.dedx.utils.DecodeException
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
+
+// extended instructions that cannot be referred to
+// representing Dalvik FILL_ARRAY_DATA instructions
+const val FILL_ARRAY_DATA = -1
 
 interface JvmInst: Opcodes {
     val opcodes: Int
@@ -167,6 +172,79 @@ class FieldInst(override val opcodes: Int, override var label: Label?, val field
         val fieldInfo = transformer.fieldInfo(fieldIndex)
         transformer.methodVisitor()
                 .visitFieldInsn(opcodes, fieldInfo.declClass.className(), fieldInfo.name, fieldInfo.type.descriptor())
+    }
+}
+
+class FillArrayDataPayloadInst(override val opcodes: Int, override var label: Label?,val slot: Int,
+                               val target: Int, val type: SlotType): JvmInst {
+    override var lineNumber: Int? = null
+    override fun visitInst(transformer: InstTransformer) {
+        val mthVisitor = transformer.methodVisitor()
+        mthVisitor.visitVarInsn(Opcodes.ALOAD, slot)
+        val payload = transformer.mthTransformer.code(target)!!.instruction as FillArrayDataPayloadDecodedInstruction
+        for (i in 0 until payload.size - 1) {
+            mthVisitor.visitInsn(Opcodes.DUP)
+            putInst(mthVisitor, payload, i)
+        }
+        putInst(mthVisitor, payload, payload.size - 1)
+    }
+    
+    private fun putInst(mthVisitor: MethodVisitor, payload: FillArrayDataPayloadDecodedInstruction, i: Int) {
+        when (i) {
+            in 0..5 -> mthVisitor.visitInsn(Opcodes.ICONST_0 + i)
+            in 6..Byte.MAX_VALUE -> mthVisitor.visitIntInsn(Opcodes.BIPUSH, i)
+            in Byte.MAX_VALUE + 1..Short.MAX_VALUE -> mthVisitor.visitIntInsn(Opcodes.SIPUSH, i)
+            else -> mthVisitor.visitLdcInsn(i)
+        }
+        when (payload.elementWidthUnit.toInt()) {
+            1 -> {
+                if (type == SlotType.BYTE) {
+                    mthVisitor.visitIntInsn(Opcodes.BIPUSH, (payload.data as ByteArray)[i].toInt())
+                    mthVisitor.visitInsn(Opcodes.BASTORE)
+                } else if (type == SlotType.CHAR) {
+                    mthVisitor.visitIntInsn(Opcodes.BIPUSH, (payload.data as ByteArray)[i].toInt())
+                    mthVisitor.visitInsn(Opcodes.CASTORE)
+                } else {
+                    throw DecodeException("")
+                }
+            }
+            2 -> {
+                if (type == SlotType.SHORT) {
+                    mthVisitor.visitIntInsn(Opcodes.SIPUSH, (payload.data as ShortArray)[i].toInt())
+                    mthVisitor.visitInsn(Opcodes.SASTORE)
+                } else {
+                    throw DecodeException("")
+                }
+            }
+            4 -> {
+                when (type) {
+                    SlotType.INT -> {
+                        mthVisitor.visitLdcInsn((payload.data as IntArray)[i])
+                        mthVisitor.visitInsn(Opcodes.IASTORE)
+                    }
+                    SlotType.FLOAT -> {
+                        mthVisitor.visitLdcInsn(Float.fromBits((payload.data as IntArray)[i]))
+                        mthVisitor.visitInsn(Opcodes.FASTORE)
+                    }
+                    SlotType.OBJECT -> {
+                        // TODO
+                        mthVisitor.visitInsn(Opcodes.AASTORE)
+                    }
+                    else -> throw DecodeException("")
+                }
+            }
+            8 -> {
+                if (type == SlotType.LONG) {
+                    mthVisitor.visitLdcInsn((payload.data as LongArray)[i])
+                    mthVisitor.visitInsn(Opcodes.LASTORE)
+                } else if (type == SlotType.DOUBLE) {
+                    mthVisitor.visitLdcInsn(Double.fromBits((payload.data as LongArray)[i]))
+                    mthVisitor.visitInsn(Opcodes.DASTORE)
+                } else {
+                    throw DecodeException("")
+                }
+            }
+        }
     }
 }
 
