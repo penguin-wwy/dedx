@@ -63,7 +63,6 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         try {
             mthVisit.visitCode()
 
-            SlotType.initConstantValue()
             StackFrame.initInstFrame(mthNode)
             val entryFrame = StackFrame.getFrameOrPut(0)
             for (type in mthNode.argsList) {
@@ -265,7 +264,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
             }
             Opcodes.FILL_ARRAY_DATA -> {
-
+                visitFillArrayData(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.THROW -> visitThrow(dalvikInst as OneRegisterDecodedInstruction, inst.cursor)
             in Opcodes.GOTO..Opcodes.GOTO_32 -> visitGoto(dalvikInst as ZeroRegisterDecodedInstruction, inst.cursor)
@@ -353,28 +352,22 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         val slot = dalvikInst.regA()
         when (dalvikInst.opcode) {
             Opcodes.CONST_4 -> {
-                frame.setSlot(slot, SlotType.BYTE)
-                SlotType.setLiteral(slot, dalvikInst.literalByte.toLong(), SlotType.isValue)
+                frame.setSlot(slot, SlotType.BYTE, dalvikInst.literalByte.toLong(), SlotType.isValue)
             }
             Opcodes.CONST_16 -> {
-                frame.setSlot(slot, SlotType.SHORT)
-                SlotType.setLiteral(slot, dalvikInst.literalUnit.toLong(), SlotType.isValue)
+                frame.setSlot(slot, SlotType.SHORT, dalvikInst.literalUnit.toLong(), SlotType.isValue)
             }
             in Opcodes.CONST..Opcodes.CONST_HIGH16 -> {
-                frame.setSlot(slot, SlotType.INT)
-                SlotType.setLiteral(slot, dalvikInst.literalInt.toLong(), SlotType.isValue)
+                frame.setSlot(slot, SlotType.INT, dalvikInst.literalInt.toLong(), SlotType.isValue)
             }
             in Opcodes.CONST_WIDE_16..Opcodes.CONST_WIDE_HIGH16 -> {
-                frame.setSlot(slot, SlotType.LONG) // also double type
-                SlotType.setLiteral(slot, dalvikInst.literal, SlotType.isValue)
+                frame.setSlot(slot, SlotType.LONG, dalvikInst.literal, SlotType.isValue) // also double type
             }
             Opcodes.CONST_STRING, Opcodes.CONST_STRING_JUMBO -> {
-                frame.setSlot(slot, SlotType.INT) // constant pool index as int type
-                SlotType.setLiteral(slot, dalvikInst.index.toLong(), SlotType.isStrIndex)
+                frame.setSlot(slot, SlotType.INT, dalvikInst.index.toLong(), SlotType.isStrIndex) // constant pool index as int type
             }
             Opcodes.CONST_CLASS -> {
-                frame.setSlot(slot, SlotType.INT) // constant pool index as int type
-                SlotType.setLiteral(slot, dalvikInst.index.toLong(), SlotType.isTypeIndex)
+                frame.setSlot(slot, SlotType.INT, dalvikInst.index.toLong(), SlotType.isTypeIndex) // constant pool index as int type
             }
         }
         pushSingleInst(jvmOpcodes.NOP) // insert NOP inst to keep label in jvmInstList
@@ -398,7 +391,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitLoad(slot: Int, slotType: SlotType, offset: Int): SlotType {
-        if (SlotType.isConstant(slot)) {
+        if (StackFrame.getFrameOrExcept(offset).isConstant(slot)) {
             visitPushOrLdc(slot, slotType, offset)
             return slotType
         }
@@ -425,19 +418,20 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         return slotType
     }
 
-    private fun SlotType.Companion.isConstant(slot: Int)
-            = SlotType.isConstantPoolIndex(slot) || SlotType.isConstantPoolLiteral(slot)
+    private fun StackFrame.isConstant(slot: Int)
+            = isConstantPoolIndex(slot) || isConstantPoolLiteral(slot)
 
     private fun visitPushOrLdc(slot: Int, slotType: SlotType, offset: Int) {
         try {
-            val literal = SlotType.getLiteral(slot)
-            if (SlotType.isConstantPoolLiteral(slot)) {
+            val frame = StackFrame.getFrameOrExcept(offset)
+            val literal = frame.getLiteral(slot)
+            if (frame.isConstantPoolLiteral(slot)) {
                 visitPushOrLdc(literal, slotType, offset)
             }
-            if (SlotType.isStringIndex(slot)) {
+            if (frame.isStringIndex(slot)) {
                 pushConstantInst(jvmOpcodes.LDC, literal.toInt())
             }
-            if (SlotType.isTypeIndex(slot)) {
+            if (frame.isTypeIndex(slot)) {
                 pushTypeInst(jvmOpcodes.LDC, dexNode.getType(literal.toInt()).descriptor())
             }
         } catch (de: DecodeException) {
@@ -487,7 +481,6 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitStore(type: SlotType, slot: Int, frame: StackFrame) {
-        SlotType.delLiteral(slot)
         when (type) {
             in SlotType.BYTE..SlotType.INT -> {
                 pushSlotInst(jvmOpcodes.ISTORE, slot)
@@ -654,7 +647,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         try {
             val regA = dalvikInst.regA()
             val regB = dalvikInst.regB()
-            if (!SlotType.isConstant(regB)) {
+            if (!StackFrame.getFrameOrPut(offset).isConstant(regB)) {
                 StackFrame.checkType(SlotType.INT, offset, regB)
             } // because of missing type information for constants, can't check type for constants
             if (dalvikInst.opcode == Opcodes.RSUB_INT || dalvikInst.opcode == Opcodes.RSUB_INT_LIT8) {
@@ -852,7 +845,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
     private fun visitMove(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
         val regB = dalvikInst.regB()
-        val slotType = frame.slot2type[regB] ?: throw DecodeException("Empty type in slot [$regB]")
+        val slotType = frame.getSlot(regB) ?: throw DecodeException("Empty type in slot [$regB]")
         visitStore(visitLoad(regB, slotType, offset), dalvikInst.regA(), frame)
     }
 
@@ -1020,5 +1013,9 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 pushSingleInst(jvmOpcodes.SASTORE)
             }
         }
+    }
+
+    private fun visitFillArrayData(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        pushShadowInst(FILL_ARRAY_DATA, dalvikInst.target.toLong(), dalvikInst.regA())
     }
 }

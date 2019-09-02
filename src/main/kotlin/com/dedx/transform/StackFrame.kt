@@ -28,10 +28,6 @@ enum class SlotType {
         const val isStrIndex = 4
         const val isTypeIndex = 8
 
-        private val ConstantValue = HashMap<Int, Pair<Int/*mark this is a value/index */, Long>>()
-
-        fun initConstantValue() = ConstantValue.clear()
-
         fun convert(type: TypeBox): SlotType? {
             if (type.getAsObjectType() != null) {
                 return OBJECT
@@ -52,28 +48,6 @@ enum class SlotType {
                 else -> throw DecodeException("Convert type $type to SlotType error.")
             }
         }
-
-        fun isConstantPoolIndex(slot: Int): Boolean {
-            val type = ConstantValue[slot]?.first ?: return false
-            return type >= 4
-        }
-        fun isConstantPoolLiteral(slot: Int): Boolean {
-            val type = ConstantValue[slot]?.first ?: return false
-            return type < 4
-        }
-        fun isStringIndex(slot: Int): Boolean {
-            val type = ConstantValue[slot]?.first ?: return false
-            return (type and 4) != 0
-        }
-        fun isTypeIndex(slot: Int): Boolean {
-            val type = ConstantValue[slot]?.first ?: return false
-            return (type and 8) != 0
-        }
-        fun getLiteral(slot: Int) = ConstantValue[slot]?.second ?: throw DecodeException("No constant value in [$slot]")
-        fun setLiteral(slot: Int, literal: Long, whichType: Int) {
-            ConstantValue[slot] = Pair(whichType, literal)
-        }
-        fun delLiteral(slot: Int) = ConstantValue.remove(slot)
     }
 }
 
@@ -89,6 +63,8 @@ class StackFrame(val cursor: Int) {
         fun getFrameOrPut(index: Int) = InstFrames.getOrPut(index) {
             return@getOrPut StackFrame(index)
         }
+
+        fun getFrameOrExcept(index: Int) = InstFrames.get(index) ?: throw DecodeException("No frame in $index")
 
         fun checkType(type: SlotType, offset: Int, vararg regs: Int) {
             val frame = InstFrames[offset] ?: throw DecodeException("Empty stack frame for inst[$offset]")
@@ -122,10 +98,12 @@ class StackFrame(val cursor: Int) {
     }
 
     val slot2type = HashMap<Int, SlotType>()
+    val constantValue = HashMap<Int, Pair<Int/*mark this is a value/index */, Long>>()
     val preFrames = TreeSet<Int>()
 
     fun init(): StackFrame {
         slot2type.clear()
+        constantValue.clear()
         return this
     }
 
@@ -152,10 +130,27 @@ class StackFrame(val cursor: Int) {
                 if (slot2type[entry.key] != entry.value) throw TypeConfliction("Stack frame [$cursor] can't merge [$frame] at ${entry.key}")
             }
         }
+        for (entry in other.constantValue) {
+            if (constantValue[entry.key] == null) {
+                constantValue[entry.key] = entry.value
+            } else {
+                val value = constantValue[entry.key]
+                if (value?.first != entry.value.first || value.second != entry.value.second) {
+                    // TODO can merge different constant value
+                    throw TypeConfliction("Stack frame [$cursor] can't merge [$frame] at ${entry.key}")
+                }
+            }
+        }
     }
 
     fun setSlot(index: Int, type: SlotType) {
         slot2type[index] = type
+        delLiteral(index)
+    }
+
+    fun setSlot(index: Int, type: SlotType, literal: Long, whichType: Int) {
+        setSlot(index, type)
+        constantValue[index] = Pair(whichType, literal)
     }
 
     fun setSlotWide(index: Int, type: SlotType) {
@@ -164,4 +159,24 @@ class StackFrame(val cursor: Int) {
     }
 
     fun getSlot(index: Int) = slot2type[index]
+
+    fun isConstantPoolIndex(slot: Int): Boolean {
+        val type = constantValue[slot]?.first ?: return false
+        return type >= 4
+    }
+    fun isConstantPoolLiteral(slot: Int): Boolean {
+        val type = constantValue[slot]?.first ?: return false
+        return type < 4
+    }
+    fun isStringIndex(slot: Int): Boolean {
+        val type = constantValue[slot]?.first ?: return false
+        return (type and 4) != 0
+    }
+    fun isTypeIndex(slot: Int): Boolean {
+        val type = constantValue[slot]?.first ?: return false
+        return (type and 8) != 0
+    }
+    fun getLiteral(slot: Int) = constantValue[slot]?.second ?: throw DecodeException("No constant value in [$slot]")
+
+    private fun delLiteral(slot: Int) = constantValue.remove(slot)
 }
