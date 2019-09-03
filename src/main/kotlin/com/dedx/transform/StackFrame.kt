@@ -8,6 +8,7 @@ import com.dedx.dex.struct.type.TypeBox
 import com.dedx.utils.DecodeException
 import com.dedx.utils.TypeConfliction
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 enum class SlotType {
@@ -99,11 +100,13 @@ class StackFrame(val cursor: Int) {
 
     val slot2type = HashMap<Int, SlotType>()
     val constantValue = HashMap<Int, Pair<Int/*mark this is a value/index */, Long>>()
+    val arrayType = HashMap<Int, ArrayList<SlotType>>()
     val preFrames = TreeSet<Int>()
 
     fun init(): StackFrame {
         slot2type.clear()
         constantValue.clear()
+        arrayType.clear()
         return this
     }
 
@@ -127,7 +130,7 @@ class StackFrame(val cursor: Int) {
             if (slot2type[entry.key] == null) {
                 slot2type[entry.key] = entry.value
             } else {
-                if (slot2type[entry.key] != entry.value) throw TypeConfliction("Stack frame [$cursor] can't merge [$frame] at ${entry.key}")
+                if (slot2type[entry.key] != entry.value) throw TypeConfliction("Stack frame [$cursor](slot type) can't merge [$frame] at ${entry.key}")
             }
         }
         for (entry in other.constantValue) {
@@ -136,21 +139,41 @@ class StackFrame(val cursor: Int) {
             } else {
                 val value = constantValue[entry.key]
                 if (value?.first != entry.value.first || value.second != entry.value.second) {
-                    // TODO can merge different constant value
-                    throw TypeConfliction("Stack frame [$cursor] can't merge [$frame] at ${entry.key}")
+                    // TODO can merge different constant value?
+                    throw TypeConfliction("Stack frame [$cursor](constant) can't merge [$frame] at ${entry.key}")
+                }
+            }
+        }
+        for (entry in other.arrayType) {
+            if (arrayType[entry.key] == null) {
+                arrayType[entry.key] = entry.value
+            } else {
+                val typeArray = arrayType[entry.key]
+                if (typeArray?.size != entry.value.size || typeArray?.last() != entry.value.last()) {
+                    // TODO can merge different array type?
+                    throw TypeConfliction("Stack frame [$cursor](array type) can't merge [$frame] at ${entry.key}")
                 }
             }
         }
     }
 
     fun setSlot(index: Int, type: SlotType) {
-        slot2type[index] = type
         delLiteral(index)
+        delArray(index)
+        slot2type[index] = type
     }
 
-    fun setSlot(index: Int, type: SlotType, literal: Long, whichType: Int) {
-        setSlot(index, type)
+    fun setSlotLiteral(index: Int, literal: Long, whichType: Int) {
+        delSlot(index)
+        delArray(index)
         constantValue[index] = Pair(whichType, literal)
+    }
+
+    fun setSlotArray(index: Int, vararg types: SlotType) {
+        delSlot(index)
+        delLiteral(index)
+        arrayType[index] = ArrayList()
+        arrayType[index]?.addAll(types)
     }
 
     fun setSlotWide(index: Int, type: SlotType) {
@@ -176,7 +199,13 @@ class StackFrame(val cursor: Int) {
         val type = constantValue[slot]?.first ?: return false
         return (type and 8) != 0
     }
-    fun getLiteral(slot: Int) = constantValue[slot]?.second ?: throw DecodeException("No constant value in [$slot]")
+    fun getLiteralExpect(slot: Int) = constantValue[slot]?.second ?: throw DecodeException("No constant value in [$slot]")
+
+    fun getArrayTypeExpect(slot: Int) = arrayType[slot] ?: throw DecodeException("No array type in [$slot]")
+
+    private fun delSlot(slot: Int) = slot2type.remove(slot)
 
     private fun delLiteral(slot: Int) = constantValue.remove(slot)
+
+    private fun delArray(slot: Int) = arrayType.remove(slot)
 }

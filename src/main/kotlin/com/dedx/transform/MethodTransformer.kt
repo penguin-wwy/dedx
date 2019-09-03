@@ -352,22 +352,22 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         val slot = dalvikInst.regA()
         when (dalvikInst.opcode) {
             Opcodes.CONST_4 -> {
-                frame.setSlot(slot, SlotType.BYTE, dalvikInst.literalByte.toLong(), SlotType.isValue)
+                frame.setSlotLiteral(slot, dalvikInst.literalByte.toLong(), SlotType.isValue)
             }
             Opcodes.CONST_16 -> {
-                frame.setSlot(slot, SlotType.SHORT, dalvikInst.literalUnit.toLong(), SlotType.isValue)
+                frame.setSlotLiteral(slot, dalvikInst.literalUnit.toLong(), SlotType.isValue)
             }
             in Opcodes.CONST..Opcodes.CONST_HIGH16 -> {
-                frame.setSlot(slot, SlotType.INT, dalvikInst.literalInt.toLong(), SlotType.isValue)
+                frame.setSlotLiteral(slot, dalvikInst.literalInt.toLong(), SlotType.isValue)
             }
             in Opcodes.CONST_WIDE_16..Opcodes.CONST_WIDE_HIGH16 -> {
-                frame.setSlot(slot, SlotType.LONG, dalvikInst.literal, SlotType.isValue) // also double type
+                frame.setSlotLiteral(slot, dalvikInst.literal, SlotType.isValue) // also double type
             }
             Opcodes.CONST_STRING, Opcodes.CONST_STRING_JUMBO -> {
-                frame.setSlot(slot, SlotType.INT, dalvikInst.index.toLong(), SlotType.isStrIndex) // constant pool index as int type
+                frame.setSlotLiteral(slot, dalvikInst.index.toLong(), SlotType.isStrIndex) // constant pool index as int type
             }
             Opcodes.CONST_CLASS -> {
-                frame.setSlot(slot, SlotType.INT, dalvikInst.index.toLong(), SlotType.isTypeIndex) // constant pool index as int type
+                frame.setSlotLiteral(slot, dalvikInst.index.toLong(), SlotType.isTypeIndex) // constant pool index as int type
             }
         }
         pushSingleInst(jvmOpcodes.NOP) // insert NOP inst to keep label in jvmInstList
@@ -424,7 +424,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     private fun visitPushOrLdc(slot: Int, slotType: SlotType, offset: Int) {
         try {
             val frame = StackFrame.getFrameOrExcept(offset)
-            val literal = frame.getLiteral(slot)
+            val literal = frame.getLiteralExpect(slot)
             if (frame.isConstantPoolLiteral(slot)) {
                 visitPushOrLdc(literal, slotType, offset)
             }
@@ -932,20 +932,48 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             pushTypeInst(jvmOpcodes.ANEWARRAY, arrayType.subType.getAsObjectType()!!.nameWithSlash())
         } else {
             when (arrayType.subType.getAsBasicType() ?: throw DecodeException("New array is not correct type", offset)) {
-                BasicType.BOOLEAN -> pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_BOOLEAN)
-                BasicType.BYTE -> pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_BYTE)
-                BasicType.CHAR -> pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_CHAR)
-                BasicType.SHORT -> pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_SHORT)
-                BasicType.INT -> pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_INT)
-                BasicType.FLOAT -> pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_FLOAT)
-                BasicType.LONG -> pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_LONG)
-                BasicType.DOUBLE -> pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_DOUBLE)
+                BasicType.BOOLEAN -> {
+                    pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_BOOLEAN)
+                    visitStoreArray(SlotType.BOOLEAN, dalvikInst.regA(), frame)
+                }
+                BasicType.BYTE -> {
+                    pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_BYTE)
+                    visitStoreArray(SlotType.BYTE, dalvikInst.regA(), frame)
+                }
+                BasicType.CHAR -> {
+                    pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_CHAR)
+                    visitStoreArray(SlotType.CHAR, dalvikInst.regA(), frame)
+                }
+                BasicType.SHORT -> {
+                    pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_SHORT)
+                    visitStoreArray(SlotType.SHORT, dalvikInst.regA(), frame)
+                }
+                BasicType.INT -> {
+                    pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_INT)
+                    visitStoreArray(SlotType.INT, dalvikInst.regA(), frame)
+                }
+                BasicType.FLOAT -> {
+                    pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_FLOAT)
+                    visitStoreArray(SlotType.FLOAT, dalvikInst.regA(), frame)
+                }
+                BasicType.LONG -> {
+                    pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_LONG)
+                    visitStoreArray(SlotType.LONG, dalvikInst.regA(), frame)
+                }
+                BasicType.DOUBLE -> {
+                    pushIntInst(jvmOpcodes.NEWARRAY, jvmOpcodes.T_DOUBLE)
+                    visitStoreArray(SlotType.DOUBLE, dalvikInst.regA(), frame)
+                }
                 else -> {
                     throw DecodeException("New array basic type error", offset)
                 }
             }
         }
-        visitStore(SlotType.OBJECT, dalvikInst.regA(), frame)
+    }
+
+    private fun visitStoreArray(type: SlotType, slot: Int, frame: StackFrame) {
+        pushSlotInst(jvmOpcodes.ASTORE, slot)
+        frame.setSlotArray(slot, type)
     }
 
     private fun visitCheckCast(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
