@@ -157,6 +157,23 @@ class StackFrame(val cursor: Int) {
         }
     }
 
+    fun pushElement(index: Int, type: TypeBox) {
+        if (type.getAsArrayType() != null) {
+            var arrayType = type.getAsArrayType()!!
+            var subType = arrayType.subType
+            var depth = 1
+            while (subType.getAsArrayType() != null) {
+                depth++
+                arrayType = subType.getAsArrayType()!!
+                subType = arrayType.subType
+            }
+            setSlotArray(index, *Array(depth + 1) { i ->
+                if (i < depth) SlotType.ARRAY else SlotType.convert(subType)!!})
+        } else {
+            setSlot(index, SlotType.convert(type)!!)
+        }
+    }
+
     fun setSlot(index: Int, type: SlotType) {
         delLiteral(index)
         delArray(index)

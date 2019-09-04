@@ -66,7 +66,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             StackFrame.initInstFrame(mthNode)
             val entryFrame = StackFrame.getFrameOrPut(0)
             for (type in mthNode.argsList) {
-                entryFrame.setSlot(slotNum(type.regNum), SlotType.convert(type.type)!!)
+                entryFrame.pushElement(slotNum(type.regNum), type.type)
             }
 
             visitTryCatchBlock()
