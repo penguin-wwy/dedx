@@ -72,6 +72,10 @@ interface JvmInst: Opcodes {
         fun CreateShadowInst(opcodes: Int, literal: Long?, regs: IntArray, label: Label? = null, lineNumber: Int? = null): JvmInst {
             return ShadowInst(opcodes, label, literal, regs).setLineNumber(lineNumber)
         }
+
+        fun CreateFillArrayDataPayloadInst(slot: Int, target: Int, type: SlotType, label: Label? = null, lineNumber: Int? = null): JvmInst {
+            return FillArrayDataPayloadInst(FILL_ARRAY_DATA, label, slot, target, type).setLineNumber(lineNumber)
+        }
     }
 }
 

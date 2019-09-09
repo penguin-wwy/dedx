@@ -202,6 +202,8 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         jvmInstManager.pushJvmInst(shadowInst)
         return shadowInst
     }
+    private fun pushFillArrayDataPayloadInst(slot: Int, target: Int, type: SlotType)
+            = jvmInstManager.pushJvmInst(JvmInst.CreateFillArrayDataPayloadInst(slot, target, type, getStartJvmLabel(), getStartJvmLine()))
 
     private fun DecodedInstruction.regA() = slotNum(a)
     private fun DecodedInstruction.regB() = slotNum(b)
@@ -997,14 +999,22 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         visitLoad(dalvikInst.regC(), SlotType.INT, offset)
         when (dalvikInst.opcode) {
             Opcodes.AGET -> {
-                pushSingleInst(jvmOpcodes.IALOAD)
-                visitStore(SlotType.INT, dalvikInst.regA(), frame)
+                val arrayType = frame.getArrayTypeExpect(dalvikInst.regB()).last()
+                when (arrayType) {
+                    SlotType.INT -> pushSingleInst(jvmOpcodes.IALOAD)
+                    SlotType.FLOAT -> pushSingleInst(jvmOpcodes.FALOAD)
+                    else -> throw DecodeException("Error array type: $arrayType for Opcodes.AGET", offset)
+                }
+                visitStore(arrayType, dalvikInst.regA(), frame)
             }
             Opcodes.AGET_WIDE -> {
-                val slave = pushShadowInst(jvmOpcodes.LALOAD, null)
-                val master = pushShadowInst(jvmOpcodes.LSTORE, null, dalvikInst.regA())
-                        .addSlaveInst(slave)
-                slave.mainInst = master
+                val arrayType = frame.getArrayTypeExpect(dalvikInst.regB()).last()
+                when (arrayType) {
+                    SlotType.LONG -> pushSingleInst(jvmOpcodes.LALOAD)
+                    SlotType.DOUBLE -> pushSingleInst(jvmOpcodes.DALOAD)
+                    else -> throw DecodeException("Error array type: $arrayType for Opcodes.AGET_WIDR", offset)
+                }
+                visitStore(arrayType, dalvikInst.regA(), frame)
             }
             Opcodes.AGET_OBJECT -> {
                 pushSingleInst(jvmOpcodes.AALOAD)
@@ -1019,14 +1029,22 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 visitStore(SlotType.SHORT, dalvikInst.regA(), frame)
             }
             Opcodes.APUT -> {
-                visitLoad(dalvikInst.regA(), SlotType.INT, offset)
-                pushSingleInst(jvmOpcodes.IASTORE)
+                val arrayType = frame.getArrayTypeExpect(dalvikInst.regB()).last()
+                visitLoad(dalvikInst.regA(), arrayType, offset)
+                when (arrayType) {
+                    SlotType.INT -> pushSingleInst(jvmOpcodes.IASTORE)
+                    SlotType.FLOAT -> pushSingleInst(jvmOpcodes.FASTORE)
+                    else -> throw DecodeException("Error array type: $arrayType for Opcode.APUT", offset)
+                }
             }
             Opcodes.APUT_WIDE -> {
-                val master = pushShadowInst(jvmOpcodes.LLOAD, null, dalvikInst.regA())
-                val slave = pushShadowInst(jvmOpcodes.LASTORE, null)
-                master.addSlaveInst(slave)
-                slave.mainInst = master
+                val arrayType = frame.getArrayTypeExpect(dalvikInst.regB()).last()
+                visitLoad(dalvikInst.regA(), arrayType, offset)
+                when (arrayType) {
+                    SlotType.LONG -> pushSingleInst(jvmOpcodes.LASTORE)
+                    SlotType.DOUBLE -> pushSingleInst(jvmOpcodes.DASTORE)
+                    else -> throw DecodeException("Error array type: $arrayType for Opcode.APUT_WIDE", offset)
+                }
             }
             Opcodes.APUT_OBJECT -> {
                 visitLoad(dalvikInst.regA(), SlotType.OBJECT, offset)
@@ -1044,6 +1062,6 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitFillArrayData(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
-        pushShadowInst(FILL_ARRAY_DATA, dalvikInst.target.toLong(), dalvikInst.regA())
+        pushFillArrayDataPayloadInst(dalvikInst.regA(), dalvikInst.target, frame.getArrayTypeExpect(dalvikInst.regA()).last())
     }
 }
