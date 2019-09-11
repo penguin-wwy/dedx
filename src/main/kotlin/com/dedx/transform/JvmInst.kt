@@ -76,6 +76,10 @@ interface JvmInst: Opcodes {
         fun CreateFillArrayDataPayloadInst(slot: Int, target: Int, type: SlotType, label: Label? = null, lineNumber: Int? = null): JvmInst {
             return FillArrayDataPayloadInst(FILL_ARRAY_DATA, label, slot, target, type).setLineNumber(lineNumber)
         }
+
+        fun CreateMultiANewArrayInsn(typeName: String, numDimensions: Int, label: Label? = null, lineNumber: Int? = null): JvmInst {
+            return MultiANewArrayInsn(label, typeName, numDimensions).setLineNumber(lineNumber)
+        }
     }
 }
 
@@ -249,6 +253,14 @@ class FillArrayDataPayloadInst(override val opcodes: Int, override var label: La
                 }
             }
         }
+    }
+}
+
+class MultiANewArrayInsn(override var label: Label?, var typeName: String, val numDimensions: Int): JvmInst {
+    override val opcodes: Int = Opcodes.MULTIANEWARRAY
+    override var lineNumber: Int? = null
+    override fun visitInst(transformer: InstTransformer) {
+        transformer.methodVisitor().visitMultiANewArrayInsn(typeName, numDimensions)
     }
 }
 

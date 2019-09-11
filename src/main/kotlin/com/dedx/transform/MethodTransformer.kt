@@ -204,6 +204,8 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
     private fun pushFillArrayDataPayloadInst(slot: Int, target: Int, type: SlotType)
             = jvmInstManager.pushJvmInst(JvmInst.CreateFillArrayDataPayloadInst(slot, target, type, getStartJvmLabel(), getStartJvmLine()))
+    private fun pushMultiANewArrayInsn(typeName: String, num: Int)
+            = jvmInstManager.pushJvmInst(JvmInst.CreateMultiANewArrayInsn(typeName, num, getStartJvmLabel(), getStartJvmLine()))
 
     private fun DecodedInstruction.regA() = slotNum(a)
     private fun DecodedInstruction.regB() = slotNum(b)
@@ -260,7 +262,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 visitNewArray(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.FILLED_NEW_ARRAY -> {
-
+                visitFilledNewArray(dalvikInst, frame, inst.cursor)
             }
             Opcodes.FILLED_NEW_ARRAY_RANGE -> {
 
@@ -1063,5 +1065,18 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
     private fun visitFillArrayData(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
         pushFillArrayDataPayloadInst(dalvikInst.regA(), dalvikInst.target, frame.getArrayTypeExpect(dalvikInst.regA()).last())
+    }
+
+    private fun visitFilledNewArray(dalvikInst: DecodedInstruction, frame: StackFrame, offset: Int) {
+        for (i in 0 until dalvikInst.registerCount) {
+            when (i) {
+                0 -> visitPushOrLdc(dalvikInst.regA(), SlotType.INT, offset)
+                1 -> visitPushOrLdc(dalvikInst.regB(), SlotType.INT, offset)
+                2 -> visitPushOrLdc(dalvikInst.regC(), SlotType.INT, offset)
+                3 -> visitPushOrLdc(dalvikInst.regD(), SlotType.INT, offset)
+                4 -> visitPushOrLdc(dalvikInst.regE(), SlotType.INT, offset)
+            }
+        }
+        pushMultiANewArrayInsn("I", dalvikInst.registerCount)
     }
 }
