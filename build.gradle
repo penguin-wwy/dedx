@@ -33,6 +33,7 @@ jar {
     }
     exclude('com/dedx/test')
 }
+
 compileKotlin {
     kotlinOptions {
         jvmTarget = "1.8"
@@ -42,6 +43,11 @@ compileTestKotlin {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+}
+
+compileGroovy {
+    dependsOn tasks.getByPath('compileKotlin')
+    classpath += files(compileKotlin.destinationDir)
 }
 
 task runTest(type: JavaExec) {
