@@ -54,4 +54,5 @@ task runTest(type: JavaExec) {
     description "Run Groovy Script"
     main = 'com.dedx.test.ScriptMain'
     classpath = sourceSets.main.runtimeClasspath
+    args "${project.rootDir}/resource"
 }
