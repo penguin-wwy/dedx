@@ -129,6 +129,12 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
         return null
     }
 
+    fun superClassName() = clsInfo.parentClass?.className()
+
+    fun superClassNameWithSlash() = clsInfo.parentClass?.className()?.replace('.', '/')
+
+    fun hasSuperClass() = clsInfo.parentClass != null
+
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is ClassNode) {
             return false

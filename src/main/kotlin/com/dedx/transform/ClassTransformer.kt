@@ -14,15 +14,11 @@ class ClassTransformer(val clsNode: ClassNode, val filePath: String = ""): Opcod
     var fieldVisitor: FieldVisitor? = null
 
     fun visitClass(): ClassTransformer {
-        var superName = "java/lang/object"
-        if (clsNode.clsInfo.parentClass != null) {
-            superName = clsNode.clsInfo.parentClass.fullName.replace('.', '/')
-        }
         classWriter.visit(V1_8,
                 clsNode.accFlags,
                 clsNode.clsInfo.fullName.replace('.', '/'),
                 null,
-                superName,
+                if (clsNode.hasSuperClass()) clsNode.superClassNameWithSlash() else "java/lang/Object",
                 null/*TODO interfaces*/)
 
         // TODO: set source file
