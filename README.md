@@ -20,6 +20,12 @@ And through the high version of the asm package, can produce a higher version of
 
 ~~Parse Debug Info For Every Method~~
 
---> Analysis Pass ...
+--> Instruction Generation
 
-Code Gen
+Optmization
+
+### Test
+
+```
+gradle -q runTest
+```
