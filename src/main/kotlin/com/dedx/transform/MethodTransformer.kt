@@ -265,7 +265,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 visitFilledNewArray(dalvikInst, frame, inst.cursor)
             }
             Opcodes.FILLED_NEW_ARRAY_RANGE -> {
-
+                visitFilledNewArrayRange(dalvikInst as RegisterRangeDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.FILL_ARRAY_DATA -> {
                 visitFillArrayData(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
@@ -1076,6 +1076,13 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 3 -> visitPushOrLdc(dalvikInst.regD(), SlotType.INT, offset)
                 4 -> visitPushOrLdc(dalvikInst.regE(), SlotType.INT, offset)
             }
+        }
+        pushMultiANewArrayInsn("I", dalvikInst.registerCount)
+    }
+
+    private fun visitFilledNewArrayRange(dalvikInst: RegisterRangeDecodedInstruction, frame: StackFrame, offset: Int) {
+        for (i in 0 until dalvikInst.registerCount) {
+            visitPushOrLdc(slotNum(dalvikInst.a + i), SlotType.INT, offset)
         }
         pushMultiANewArrayInsn("I", dalvikInst.registerCount)
     }
