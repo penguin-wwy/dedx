@@ -204,6 +204,10 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
     private fun pushFillArrayDataPayloadInst(slot: Int, target: Int, type: SlotType)
             = jvmInstManager.pushJvmInst(JvmInst.CreateFillArrayDataPayloadInst(slot, target, type, getStartJvmLabel(), getStartJvmLine()))
+    private fun pushPackedSwitchPayloadInst(slot: Int, target: Int, type: SlotType)
+            = jvmInstManager.pushJvmInst(JvmInst.CreatePackedSwitchPayloadInst(slot, target, type, getStartJvmLabel(), getStartJvmLine()))
+    private fun pushSparseSwitchPayloadInst(slot: Int, target: Int, type: SlotType)
+            = jvmInstManager.pushJvmInst(JvmInst.CreateSparseSwitchPayloadInst(slot, target, type, getStartJvmLabel(), getStartJvmLine()))
     private fun pushMultiANewArrayInsn(typeName: String, num: Int)
             = jvmInstManager.pushJvmInst(JvmInst.CreateMultiANewArrayInsn(typeName, num, getStartJvmLabel(), getStartJvmLine()))
 
@@ -268,15 +272,15 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 visitFilledNewArrayRange(dalvikInst as RegisterRangeDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.FILL_ARRAY_DATA -> {
-                visitFillArrayData(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
+                visitPayloadInst(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.THROW -> visitThrow(dalvikInst as OneRegisterDecodedInstruction, inst.cursor)
             in Opcodes.GOTO..Opcodes.GOTO_32 -> visitGoto(dalvikInst as ZeroRegisterDecodedInstruction, inst.cursor)
             Opcodes.PACKED_SWITCH -> {
-
+                visitPayloadInst(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.SPARSE_SWITCH -> {
-
+                visitPayloadInst(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             }
             in Opcodes.CMPL_FLOAT..Opcodes.CMP_LONG -> visitCmpStmt(dalvikInst as ThreeRegisterDecodedInstruction, frame, inst.cursor)
             in Opcodes.IF_EQ..Opcodes.IF_LE -> visitIfStmt(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
@@ -1063,8 +1067,16 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         }
     }
 
-    private fun visitFillArrayData(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
-        pushFillArrayDataPayloadInst(dalvikInst.regA(), dalvikInst.target, frame.getArrayTypeExpect(dalvikInst.regA()).last())
+    private fun visitPayloadInst(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        val slot = dalvikInst.regA()
+        when (dalvikInst.opcode) {
+            Opcodes.FILL_ARRAY_DATA -> pushFillArrayDataPayloadInst(slot, dalvikInst.target,
+                    frame.getArrayTypeExpect(slot).last())
+            Opcodes.PACKED_SWITCH -> pushPackedSwitchPayloadInst(slot, dalvikInst.target,
+                    frame.getSlot(slot) ?: throw DecodeException("Empty slot type [$slot] for PACKED_SWITCH", offset))
+            Opcodes.SPARSE_SWITCH -> pushSparseSwitchPayloadInst(slot, dalvikInst.target,
+                    frame.getSlot(slot) ?: throw DecodeException("Empty slot type [$slot] for SPARSE_SWITCH", offset))
+        }
     }
 
     private fun visitFilledNewArray(dalvikInst: DecodedInstruction, frame: StackFrame, offset: Int) {

@@ -10,6 +10,8 @@ import org.objectweb.asm.Type
 // extended instructions that cannot be referred to
 // representing Dalvik FILL_ARRAY_DATA instructions
 const val FILL_ARRAY_DATA = -1
+const val Packed_Switch_Payload = -2
+const val Sparse_Switch_Payload = -3
 
 interface JvmInst: Opcodes {
     val opcodes: Int
@@ -75,6 +77,14 @@ interface JvmInst: Opcodes {
 
         fun CreateFillArrayDataPayloadInst(slot: Int, target: Int, type: SlotType, label: Label? = null, lineNumber: Int? = null): JvmInst {
             return FillArrayDataPayloadInst(FILL_ARRAY_DATA, label, slot, target, type).setLineNumber(lineNumber)
+        }
+
+        fun CreatePackedSwitchPayloadInst(slot: Int, target: Int, type: SlotType, label: Label? = null, lineNumber: Int? = null): JvmInst {
+            return PackedSwitchPayloadInst(Packed_Switch_Payload, label, slot, target, type).setLineNumber(lineNumber)
+        }
+
+        fun CreateSparseSwitchPayloadInst(slot: Int, target: Int, type: SlotType, label: Label? = null, lineNumber: Int? = null): JvmInst {
+            return SparseSwitchPayloadInst(Sparse_Switch_Payload, label, slot, target, type).setLineNumber(lineNumber)
         }
 
         fun CreateMultiANewArrayInsn(typeName: String, numDimensions: Int, label: Label? = null, lineNumber: Int? = null): JvmInst {
@@ -183,7 +193,7 @@ class FieldInst(override val opcodes: Int, override var label: Label?, val field
     }
 }
 
-class FillArrayDataPayloadInst(override val opcodes: Int, override var label: Label?,val slot: Int,
+class FillArrayDataPayloadInst(override val opcodes: Int, override var label: Label?, val slot: Int,
                                val target: Int, val type: SlotType): JvmInst {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
@@ -253,6 +263,22 @@ class FillArrayDataPayloadInst(override val opcodes: Int, override var label: La
                 }
             }
         }
+    }
+}
+
+class PackedSwitchPayloadInst(override val opcodes: Int, override var label: Label?, val slot: Int,
+                              val target: Int, val type: SlotType): JvmInst {
+    override var lineNumber: Int? = null
+    override fun visitInst(transformer: InstTransformer) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+}
+
+class SparseSwitchPayloadInst(override val opcodes: Int, override var label: Label?, val slot: Int,
+                              val target: Int, val type: SlotType): JvmInst {
+    override var lineNumber: Int? = null
+    override fun visitInst(transformer: InstTransformer) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 }
 
