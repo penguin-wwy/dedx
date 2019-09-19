@@ -1,6 +1,8 @@
 package com.dedx.transform
 
 import com.android.dx.io.instructions.FillArrayDataPayloadDecodedInstruction
+import com.android.dx.io.instructions.PackedSwitchPayloadDecodedInstruction
+import com.android.dx.io.instructions.SparseSwitchPayloadDecodedInstruction
 import com.dedx.utils.DecodeException
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
@@ -79,12 +81,12 @@ interface JvmInst: Opcodes {
             return FillArrayDataPayloadInst(FILL_ARRAY_DATA, label, slot, target, type).setLineNumber(lineNumber)
         }
 
-        fun CreatePackedSwitchPayloadInst(slot: Int, target: Int, type: SlotType, label: Label? = null, lineNumber: Int? = null): JvmInst {
-            return PackedSwitchPayloadInst(Packed_Switch_Payload, label, slot, target, type).setLineNumber(lineNumber)
+        fun CreatePackedSwitchPayloadInst(target: Int, defaultLabel: Label, label: Label? = null, lineNumber: Int? = null): JvmInst {
+            return PackedSwitchPayloadInst(Packed_Switch_Payload, label, target, defaultLabel).setLineNumber(lineNumber)
         }
 
-        fun CreateSparseSwitchPayloadInst(slot: Int, target: Int, type: SlotType, label: Label? = null, lineNumber: Int? = null): JvmInst {
-            return SparseSwitchPayloadInst(Sparse_Switch_Payload, label, slot, target, type).setLineNumber(lineNumber)
+        fun CreateSparseSwitchPayloadInst(target: Int, defaultLabel: Label, label: Label? = null, lineNumber: Int? = null): JvmInst {
+            return SparseSwitchPayloadInst(Sparse_Switch_Payload, label, target, defaultLabel).setLineNumber(lineNumber)
         }
 
         fun CreateMultiANewArrayInsn(typeName: String, numDimensions: Int, label: Label? = null, lineNumber: Int? = null): JvmInst {
@@ -266,19 +268,32 @@ class FillArrayDataPayloadInst(override val opcodes: Int, override var label: La
     }
 }
 
-class PackedSwitchPayloadInst(override val opcodes: Int, override var label: Label?, val slot: Int,
-                              val target: Int, val type: SlotType): JvmInst {
+class PackedSwitchPayloadInst(override val opcodes: Int, override var label: Label?,
+                              val target: Int, val defaultLabel: Label): JvmInst {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val mthVisitor = transformer.methodVisitor()
+        val payload = transformer.mthTransformer.code(target)!!.instruction as PackedSwitchPayloadDecodedInstruction
+        val labelArray = Array(payload.targets.size) {
+            i -> transformer.mthTransformer.code(payload.targets[i])!!.getLabel()!!.value
+        }
+        mthVisitor.visitTableSwitchInsn(payload.firstKey, payload.firstKey + labelArray.size - 1, defaultLabel, *labelArray)
     }
 }
 
-class SparseSwitchPayloadInst(override val opcodes: Int, override var label: Label?, val slot: Int,
-                              val target: Int, val type: SlotType): JvmInst {
+class SparseSwitchPayloadInst(override val opcodes: Int, override var label: Label?,
+                              val target: Int, val defaultLabel: Label): JvmInst {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        val mthVisitor = transformer.methodVisitor()
+        val payload = transformer.mthTransformer.code(target)!!.instruction as SparseSwitchPayloadDecodedInstruction
+        val caseArray = IntArray(payload.keys.size) {
+            i -> payload.keys[i]
+        }
+        val labelArray = Array(payload.targets.size) {
+            i -> transformer.mthTransformer.code(payload.targets[i])!!.getLabel()!!.value
+        }
+        mthVisitor.visitLookupSwitchInsn(defaultLabel, caseArray, labelArray)
     }
 }
 

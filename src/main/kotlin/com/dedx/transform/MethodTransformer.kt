@@ -204,10 +204,10 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
     private fun pushFillArrayDataPayloadInst(slot: Int, target: Int, type: SlotType)
             = jvmInstManager.pushJvmInst(JvmInst.CreateFillArrayDataPayloadInst(slot, target, type, getStartJvmLabel(), getStartJvmLine()))
-    private fun pushPackedSwitchPayloadInst(slot: Int, target: Int, type: SlotType)
-            = jvmInstManager.pushJvmInst(JvmInst.CreatePackedSwitchPayloadInst(slot, target, type, getStartJvmLabel(), getStartJvmLine()))
-    private fun pushSparseSwitchPayloadInst(slot: Int, target: Int, type: SlotType)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateSparseSwitchPayloadInst(slot, target, type, getStartJvmLabel(), getStartJvmLine()))
+    private fun pushPackedSwitchPayloadInst(target: Int, defLabel: Label)
+            = jvmInstManager.pushJvmInst(JvmInst.CreatePackedSwitchPayloadInst(target, defLabel, getStartJvmLabel(), getStartJvmLine()))
+    private fun pushSparseSwitchPayloadInst(target: Int, defLabel: Label)
+            = jvmInstManager.pushJvmInst(JvmInst.CreateSparseSwitchPayloadInst(target, defLabel, getStartJvmLabel(), getStartJvmLine()))
     private fun pushMultiANewArrayInsn(typeName: String, num: Int)
             = jvmInstManager.pushJvmInst(JvmInst.CreateMultiANewArrayInsn(typeName, num, getStartJvmLabel(), getStartJvmLine()))
 
@@ -1072,10 +1072,16 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         when (dalvikInst.opcode) {
             Opcodes.FILL_ARRAY_DATA -> pushFillArrayDataPayloadInst(slot, dalvikInst.target,
                     frame.getArrayTypeExpect(slot).last())
-            Opcodes.PACKED_SWITCH -> pushPackedSwitchPayloadInst(slot, dalvikInst.target,
-                    frame.getSlot(slot) ?: throw DecodeException("Empty slot type [$slot] for PACKED_SWITCH", offset))
-            Opcodes.SPARSE_SWITCH -> pushSparseSwitchPayloadInst(slot, dalvikInst.target,
-                    frame.getSlot(slot) ?: throw DecodeException("Empty slot type [$slot] for SPARSE_SWITCH", offset))
+            Opcodes.PACKED_SWITCH -> {
+                visitLoad(slot, frame.getSlot(slot) ?: throw DecodeException("Empty slot type [$slot] for PACKED_SWITCH", offset), offset)
+                val defLabel = mthNode.getNextInst(offset)?.getLabel()?.value ?: throw DecodeException("No default label", offset)
+                pushPackedSwitchPayloadInst(dalvikInst.target, defLabel)
+            }
+            Opcodes.SPARSE_SWITCH -> {
+                visitLoad(slot, frame.getSlot(slot) ?: throw DecodeException("Empty slot type [$slot] for SPARSE_SWITCH", offset), offset)
+                val defLabel = mthNode.getNextInst(offset)?.getLabel()?.value ?: throw DecodeException("No default label", offset)
+                pushSparseSwitchPayloadInst(dalvikInst.target, defLabel)
+            }
         }
     }
 
