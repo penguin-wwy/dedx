@@ -8,6 +8,7 @@ import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
+import java.util.*
 
 // extended instructions that cannot be referred to
 // representing Dalvik FILL_ARRAY_DATA instructions
@@ -268,6 +269,11 @@ class FillArrayDataPayloadInst(override val opcodes: Int, override var label: La
     }
 }
 
+/*
+* lookupswitch and tableswitch instruction need StackMapTable,
+* otherwise throw java.lang.VerifyError: Expecting a stackmap frame
+*/
+
 class PackedSwitchPayloadInst(override val opcodes: Int, override var label: Label?,
                               val target: Int, val defaultLabel: Label): JvmInst {
     override var lineNumber: Int? = null
@@ -275,7 +281,7 @@ class PackedSwitchPayloadInst(override val opcodes: Int, override var label: Lab
         val mthVisitor = transformer.methodVisitor()
         val payload = transformer.mthTransformer.code(target)!!.instruction as PackedSwitchPayloadDecodedInstruction
         val labelArray = Array(payload.targets.size) {
-            i -> transformer.mthTransformer.code(payload.targets[i])!!.getLabel()!!.value
+            i -> transformer.mthTransformer.code(payload.targets[i] - target)!!.getLabelOrPut()!!.value
         }
         mthVisitor.visitTableSwitchInsn(payload.firstKey, payload.firstKey + labelArray.size - 1, defaultLabel, *labelArray)
     }
@@ -291,7 +297,7 @@ class SparseSwitchPayloadInst(override val opcodes: Int, override var label: Lab
             i -> payload.keys[i]
         }
         val labelArray = Array(payload.targets.size) {
-            i -> transformer.mthTransformer.code(payload.targets[i])!!.getLabel()!!.value
+            i -> transformer.mthTransformer.code(payload.targets[i] - target)!!.getLabelOrPut()!!.value
         }
         mthVisitor.visitLookupSwitchInsn(defaultLabel, caseArray, labelArray)
     }

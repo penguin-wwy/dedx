@@ -220,7 +220,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     private fun normalProcess(inst: InstNode) {
 
         /*should use a safer way of assigning*/
-        jvmLabel = inst.getLableOrPut().value
+        jvmLabel = inst.getLabelOrPut().value
         jvmLine = inst.getLineNumber()
 
         val frame = StackFrame.getFrameOrPut(inst.cursor).merge()
@@ -384,7 +384,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     private fun visitIfStmt(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
         visitLoad(dalvikInst.regA(), SlotType.INT, offset)
         visitLoad(dalvikInst.regB(), SlotType.INT, offset)
-        val target = code(dalvikInst.target)?.getLableOrPut()?.value
+        val target = code(dalvikInst.target)?.getLabelOrPut()?.value
                 ?: throw DecodeException("${dalvikInst.target} has no lable", offset)
         pushJumpInst(dalvikInst.opcode - Opcodes.IF_EQ + jvmOpcodes.IF_ICMPEQ, target)
         StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(offset)
@@ -392,7 +392,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
     private fun visitIfStmt(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
         visitLoad(dalvikInst.regA(), SlotType.INT, offset)
-        val target = code(dalvikInst.target)?.getLableOrPut()?.value
+        val target = code(dalvikInst.target)?.getLabelOrPut()?.value
                 ?: throw DecodeException("${dalvikInst.target} has no lable", offset)
         pushJumpInst(dalvikInst.opcode - Opcodes.IF_EQZ + jvmOpcodes.IFEQ, target)
         StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(offset)
@@ -549,7 +549,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         if (targetCode.instruction.opcode in Opcodes.RETURN..Opcodes.RETURN_OBJECT) {
             visitReturn(targetCode.instruction.regA(), SlotType.convert(mthNode.getReturnType())!!, offset)
         } else {
-            val target = targetCode.getLableOrPut().value
+            val target = targetCode.getLabelOrPut().value
             pushJumpInst(jvmOpcodes.GOTO, target)
             StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(offset)
         }
@@ -1074,12 +1074,12 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                     frame.getArrayTypeExpect(slot).last())
             Opcodes.PACKED_SWITCH -> {
                 visitLoad(slot, frame.getSlot(slot) ?: throw DecodeException("Empty slot type [$slot] for PACKED_SWITCH", offset), offset)
-                val defLabel = mthNode.getNextInst(offset)?.getLabel()?.value ?: throw DecodeException("No default label", offset)
+                val defLabel = mthNode.getNextInst(offset)?.getLabelOrPut()?.value ?: throw DecodeException("No default label", offset)
                 pushPackedSwitchPayloadInst(dalvikInst.target, defLabel)
             }
             Opcodes.SPARSE_SWITCH -> {
                 visitLoad(slot, frame.getSlot(slot) ?: throw DecodeException("Empty slot type [$slot] for SPARSE_SWITCH", offset), offset)
-                val defLabel = mthNode.getNextInst(offset)?.getLabel()?.value ?: throw DecodeException("No default label", offset)
+                val defLabel = mthNode.getNextInst(offset)?.getLabelOrPut()?.value ?: throw DecodeException("No default label", offset)
                 pushSparseSwitchPayloadInst(dalvikInst.target, defLabel)
             }
         }
