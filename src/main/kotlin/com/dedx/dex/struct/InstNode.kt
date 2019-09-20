@@ -25,7 +25,7 @@ class InstNode(val cursor: Int, val instruction: DecodedInstruction) : AttrNode 
         false -> null
     }
 
-    fun getLableOrPut() = attributes.getOrPut(AttrKey.LABEL) {
+    fun getLabelOrPut() = attributes.getOrPut(AttrKey.LABEL) {
         return@getOrPut AttrValueLabel(Label())
     } as AttrValueLabel
 
