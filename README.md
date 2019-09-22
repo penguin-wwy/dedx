@@ -20,9 +20,9 @@ And through the high version of the asm package, can produce a higher version of
 
 ~~Parse Debug Info For Every Method~~
 
---> Instruction Generation
+~~Instruction Generation~~
 
-Optmization
+--> Optmization
 
 ### Test
 
