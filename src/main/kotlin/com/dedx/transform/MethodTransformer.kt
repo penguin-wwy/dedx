@@ -294,19 +294,20 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             in Opcodes.IGET..Opcodes.IPUT_SHORT -> visitInstanceField(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
             in Opcodes.SGET..Opcodes.SPUT_SHORT -> visitStaticField(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             Opcodes.INVOKE_VIRTUAL -> newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKEVIRTUAL, frame, inst.cursor)
-            Opcodes.INVOKE_SUPER -> {
-                // TODO
-            }
+            Opcodes.INVOKE_SUPER -> newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKESPECIAL, frame, inst.cursor)
             Opcodes.INVOKE_DIRECT -> newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKESPECIAL, frame, inst.cursor)
             Opcodes.INVOKE_STATIC -> newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKESTATIC, frame, inst.cursor)
-            Opcodes.INVOKE_INTERFACE -> {
-                // TODO
-            }
-            Opcodes.INVOKE_VIRTUAL_RANGE -> {}
-            Opcodes.INVOKE_SUPER_RANGE -> {}
-            Opcodes.INVOKE_DIRECT_RANGE -> {}
-            Opcodes.INVOKE_STATIC_RANGE -> {}
-            Opcodes.INVOKE_INTERFACE_RANGE -> {}
+            Opcodes.INVOKE_INTERFACE -> newestReturn = visitInvoke(dalvikInst, InvokeType.INVOKEINTERFACE, frame, inst.cursor)
+            Opcodes.INVOKE_VIRTUAL_RANGE -> newestReturn = visitInvokeRange(dalvikInst as RegisterRangeDecodedInstruction,
+                    InvokeType.INVOKEVIRTUAL, frame, inst.cursor)
+            Opcodes.INVOKE_SUPER_RANGE -> newestReturn = visitInvokeRange(dalvikInst as RegisterRangeDecodedInstruction,
+                    InvokeType.INVOKESPECIAL, frame, inst.cursor)
+            Opcodes.INVOKE_DIRECT_RANGE -> newestReturn = visitInvokeRange(dalvikInst as RegisterRangeDecodedInstruction,
+                    InvokeType.INVOKESPECIAL, frame, inst.cursor)
+            Opcodes.INVOKE_STATIC_RANGE -> newestReturn = visitInvokeRange(dalvikInst as RegisterRangeDecodedInstruction,
+                    InvokeType.INVOKESTATIC, frame, inst.cursor)
+            Opcodes.INVOKE_INTERFACE_RANGE -> newestReturn = visitInvokeRange(dalvikInst as RegisterRangeDecodedInstruction,
+                    InvokeType.INVOKEINTERFACE, frame, inst.cursor)
             in Opcodes.NEG_INT..Opcodes.INT_TO_SHORT -> visitUnop(dalvikInst as TwoRegisterDecodedInstruction, frame, inst.cursor)
             in Opcodes.ADD_INT..Opcodes.REM_DOUBLE -> visitBinOp(dalvikInst as ThreeRegisterDecodedInstruction, frame, inst.cursor)
             in Opcodes.ADD_INT_2ADDR..Opcodes.USHR_INT_2ADDR,
@@ -351,6 +352,16 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                     else -> throw DecodeException("invoke instruction register number error.", offset)
                 }
             }
+        }
+        pushInvokeInst(invokeType, dalvikInst.index)
+        return SlotType.convert(mthInfo.retType)
+    }
+
+    private fun visitInvokeRange(dalvikInst: RegisterRangeDecodedInstruction, invokeType: Int, frame: StackFrame, offset: Int): SlotType? {
+        val mthInfo = MethodInfo.fromDex(dexNode, dalvikInst.index)
+        for (i in 0 until dalvikInst.registerCount) {
+            val slot = slotNum(dalvikInst.a + i)
+            visitLoad(slot, frame.slotType(slot) ?: throw DecodeException("Empty type in slot [$slot]"), offset)
         }
         pushInvokeInst(invokeType, dalvikInst.index)
         return SlotType.convert(mthInfo.retType)

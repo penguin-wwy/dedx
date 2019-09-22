@@ -198,6 +198,19 @@ class StackFrame(val cursor: Int) {
         slot2type[index + 1] = type
     }
 
+    fun slotType(index: Int): SlotType? {
+        if (slot2type.containsKey(index)) {
+            return slot2type[index]
+        }
+        if (arrayType.containsKey(index)) {
+            return SlotType.OBJECT
+        }
+        if (constantValue.containsKey(index)) {
+            return SlotType.INT
+        }
+        return null
+    }
+
     fun getSlot(index: Int) = slot2type[index]
 
     fun isConstantPoolIndex(slot: Int): Boolean {

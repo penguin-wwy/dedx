@@ -175,8 +175,12 @@ class InvokeInst(override val opcodes: Int, override var label: Label?, val invo
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthInfo = transformer.methodInfo(mthIndex)
+        var isInterface = false
+        if (invokeType == Opcodes.INVOKEINTERFACE) {
+            isInterface = true
+        }
         transformer.methodVisitor()
-                .visitMethodInsn(invokeType, mthInfo.declClass.className(), mthInfo.name, mthInfo.parseSignature(), false)
+                .visitMethodInsn(invokeType, mthInfo.declClass.className(), mthInfo.name, mthInfo.parseSignature(), isInterface)
     }
 }
 
