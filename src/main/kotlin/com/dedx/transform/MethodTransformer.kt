@@ -11,6 +11,7 @@ import com.dedx.tools.Configuration
 import com.dedx.utils.DecodeException
 import com.dedx.utils.TypeConfliction
 import org.objectweb.asm.Label
+import org.objectweb.asm.MethodVisitor
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
@@ -41,12 +42,14 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     var jvmLine: Int? = null
     var skipInst = 0 // mark instruction number which skip
 
-    val mthVisit = clsTransformer.classWriter.visitMethod(
-            mthNode.accFlags, mthNode.mthInfo.name, mthNode.descriptor,
-            null, null)
+    lateinit var mthVisit: MethodVisitor
 
     fun visitMethod() {
+        mthVisit = clsTransformer.classWriter.visitMethod(mthNode.accFlags, mthNode.mthInfo.name, mthNode.descriptor, null, null)
         if (mthNode.noCode) {
+            if (mthNode.isAbstract()) {
+                mthVisit.visitEnd()
+            }
             return
         }
         if (mthNode.debugInfoOffset != DexNode.NO_INDEX) {

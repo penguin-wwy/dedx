@@ -19,4 +19,7 @@ interface AccessInfo {
     fun isStatic(): Boolean {
         return (accFlags and AccessFlags.ACC_STATIC) != 0
     }
+    fun isAbstract(): Boolean {
+        return (accFlags and AccessFlags.ACC_ABSTRACT) != 0
+    }
 }

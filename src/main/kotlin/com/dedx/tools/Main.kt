@@ -62,7 +62,7 @@ fun configFromOptions(args: Array<String>, optTable: Options) {
 }
 
 fun compileClass(classNode: ClassNode) {
-    val path = Configuration.outDir + File.pathSeparator + classNode.clsInfo.className()
+    val path = Configuration.outDir + File.separator + classNode.clsInfo.className() + ".class"
     if (!File(path).parentFile.exists()) {
         File(path).parentFile.mkdirs()
     }

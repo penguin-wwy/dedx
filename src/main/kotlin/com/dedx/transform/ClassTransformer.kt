@@ -38,9 +38,10 @@ class ClassTransformer(val clsNode: ClassNode, val filePath: String = ""): Opcod
     }
 
     fun dump(): String {
-        val outputStream = FileOutputStream(File(filePath))
-        outputStream.write(classWriter.toByteArray())
-        return filePath
+            FileOutputStream(File(filePath)).use {
+                w -> w.write(classWriter.toByteArray())
+            }
+            return filePath
     }
 
     fun toFile(path: String) = FileOutputStream(File(path)).write(classWriter.toByteArray())
