@@ -463,6 +463,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
     private fun visitPushOrLdc(literal: Long, slotType: SlotType, offset: Int) {
         when (slotType) {
+            SlotType.BOOLEAN -> pushSingleInst(jvmOpcodes.ICONST_0 + literal.toInt())
             SlotType.BYTE -> pushIntInst(jvmOpcodes.BIPUSH, literal.toInt())
             SlotType.SHORT -> pushIntInst(jvmOpcodes.SIPUSH, literal.toInt())
             SlotType.INT -> {
@@ -504,6 +505,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
     private fun visitStore(type: SlotType, slot: Int, frame: StackFrame) {
         when (type) {
+            SlotType.BOOLEAN,
             in SlotType.BYTE..SlotType.INT -> {
                 pushSlotInst(jvmOpcodes.ISTORE, slot)
                 frame.setSlot(slot, type)
@@ -537,6 +539,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     private fun visitReturn(slot: Int, type: SlotType, offset: Int) {
         visitLoad(slot, type, offset)
         when (type) {
+            SlotType.BOOLEAN,
             in SlotType.BYTE..SlotType.INT -> {
                 pushSingleInst(jvmOpcodes.IRETURN)
             }

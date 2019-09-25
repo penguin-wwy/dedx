@@ -15,4 +15,10 @@ object InfoStorage {
         methods[mthId] = mth
         return mth
     }
+
+    fun clear() {
+        classes.clear()
+        methods.clear()
+        fields.clear()
+    }
 }

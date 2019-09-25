@@ -30,6 +30,7 @@ class DexNode private constructor(val dex: Dex) {
     }
 
     fun loadClass() {
+        InfoStorage.clear()
         for (cls in dex.classDefs()) {
             var clsData: ClassData? = null
             if (cls.classDataOffset != 0) {

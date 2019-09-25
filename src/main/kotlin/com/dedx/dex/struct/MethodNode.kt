@@ -145,7 +145,7 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
             return
         }
         for (args in mthInfo.args) {
-            if (argRegOff >= regsCount) {
+            if (argRegOff > regsCount) {
                 throw DecodeException("regs count less argument count in $mthInfo")
             }
             argsList.add(InstArgNode(argRegOff, args))

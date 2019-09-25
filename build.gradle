@@ -55,5 +55,6 @@ task runTest(type: JavaExec) {
     description "Run Groovy Script"
     main = 'com.dedx.test.ScriptMain'
     classpath = sourceSets.main.runtimeClasspath
+    jvmArgs += "-noverify" // avoid: Expecting a stackmap frame
     args "${project.rootDir}/resource"
 }
