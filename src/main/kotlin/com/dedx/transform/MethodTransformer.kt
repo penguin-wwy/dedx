@@ -42,10 +42,11 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     var jvmLine: Int? = null
     var skipInst = 0 // mark instruction number which skip
 
-    lateinit var mthVisit: MethodVisitor
+    val mthVisit: MethodVisitor by lazy {
+        clsTransformer.classWriter.visitMethod(mthNode.accFlags, mthNode.mthInfo.name, mthNode.descriptor, null, null)
+    }
 
     fun visitMethod() {
-        mthVisit = clsTransformer.classWriter.visitMethod(mthNode.accFlags, mthNode.mthInfo.name, mthNode.descriptor, null, null)
         if (mthNode.noCode) {
             if (mthNode.isAbstract()) {
                 mthVisit.visitEnd()

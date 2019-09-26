@@ -20,7 +20,7 @@ class BitArray(val size: Int) {
     companion object {
         fun sub(b1: BitArray, b2: BitArray): BitArray {
             val result = BitArray(b1.size)
-            for (offset in 0 until  b1._array.size) {
+            for (offset in b1._array.indices) {
                 if (offset < b2._array.size) {
                     val tmp = b1._array[offset].toInt() and b2._array[offset].toInt()
                     result._array[offset] = (b1._array[offset].toInt() - tmp).toByte()
@@ -132,7 +132,7 @@ class BitArray(val size: Int) {
         if (_array.size != data.size) {
             return false
         } else {
-            for (offset in 0 until _array.size) {
+            for (offset in _array.indices) {
                 if (_array[offset] != data[offset]) {
                     return false
                 }
@@ -150,7 +150,7 @@ class BitArray(val size: Int) {
             return "{}"
         }
         val indexList = ArrayList<Int>()
-        for (offset in 0 until _array.size) {
+        for (offset in _array.indices) {
             for (i in 0..7) {
                 val tmp = 1 shl i
                 if ((_array[offset].toInt() and tmp) != 0) {

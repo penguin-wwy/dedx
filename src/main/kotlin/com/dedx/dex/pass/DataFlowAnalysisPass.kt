@@ -63,7 +63,7 @@ object DataFlowAnalysisPass {
         }
         val beChange = fun(): Boolean {
             var result = false
-            for (i in 0 until blockReverseList.size) {
+            for (i in blockReverseList.indices) {
                 val liveIn = dfMethodInfo.getBlockInfo(blockReverseList[i])?.liveIn
                 if (!liveIn!!.equal(lastLiveIn[i])) {
                     result = true
@@ -73,7 +73,7 @@ object DataFlowAnalysisPass {
             return result
         }
         do {
-            for (i in 0 until blockReverseList.size) {
+            for (i in blockReverseList.indices) {
                 val block = blockReverseList[i]
                 val succList = block.successor.stream().map {
                     basicBlock -> dfMethodInfo.getBlockInfo(basicBlock)?.liveIn

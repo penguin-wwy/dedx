@@ -91,7 +91,7 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
         for (handler in catchBlocks) {
             val tcBlock = TryCatchBlock()
             tryBlockList.add(tcBlock)
-            for (i in 0 until handler.addresses.size) {
+            for (i in handler.addresses.indices) {
                 tcBlock.addHandler(this, handler.addresses[i], ClassInfo.fromDex(dex(), handler.typeIndexes[i]))
                 addrs.add(handler.addresses[i])
                 handlerCount++

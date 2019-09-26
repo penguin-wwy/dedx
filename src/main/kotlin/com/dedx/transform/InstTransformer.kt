@@ -81,7 +81,7 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
     }
 
     private fun buildJumpPhase() {
-        for (i in 0 until jvmInstList.size) {
+        for (i in jvmInstList.indices) {
             if (jvmInstList[i] is JumpInst) {
                 val jumpInst = jvmInstList[i] as JumpInst
                 when (jumpInst.opcodes) {
