@@ -11,7 +11,7 @@ import java.io.FileOutputStream
 
 class ClassTransformer(val clsNode: ClassNode, val filePath: String = ""): Opcodes {
     val classWriter = ClassWriter(0)
-    var fieldVisitor: FieldVisitor? = null
+    lateinit var fieldVisitor: FieldVisitor
 
     fun visitClass(): ClassTransformer {
         classWriter.visit(V1_8,
@@ -19,7 +19,9 @@ class ClassTransformer(val clsNode: ClassNode, val filePath: String = ""): Opcod
                 clsNode.clsInfo.fullName.replace('.', '/'),
                 null,
                 if (clsNode.hasSuperClass()) clsNode.superClassNameWithSlash() else "java/lang/Object",
-                null/*TODO interfaces*/)
+                if (clsNode.interfaces.isNotEmpty()) Array(clsNode.interfaces.size) {
+                    i -> clsNode.interfaces[i].nameWithSlash()
+                } else null)
 
         // TODO: set source file
 //        classWriter.visitSource()

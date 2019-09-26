@@ -90,11 +90,9 @@ def AClassAssert(String classFile) {
     def loader = new URLClassLoader(urls, this.class.classLoader)
     def aClass = loader.loadClass("AClass")
     def getName = aClass.getMethod("getName")
-    println getName.invoke(aClass.newInstance())
     assert getName.invoke(aClass.newInstance()).equals("AClass")
-    // need finish interface
-//    def test = aClass.getMethod("test")
-//    println test.invoke(null)
+    def test = aClass.getMethod("test")
+    assert test.invoke(null)
     return true
 }
 

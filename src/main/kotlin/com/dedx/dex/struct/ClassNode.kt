@@ -3,9 +3,9 @@ package com.dedx.dex.struct
 import com.android.dex.ClassData
 import com.android.dex.ClassDef
 import com.dedx.dex.parser.AnnotationsParser
-import com.dedx.dex.parser.EncValueParser
 import com.dedx.dex.parser.StaticValuesParser
-import com.dedx.dex.struct.type.TypeBox
+import com.dedx.dex.struct.type.ObjectType
+import com.dedx.utils.DecodeException
 import java.lang.Exception
 import java.util.*
 import kotlin.collections.ArrayList
@@ -16,8 +16,8 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
     override val attributes: MutableMap<AttrKey, AttrValue> = HashMap()
     override val accFlags: Int = cls.accessFlags
     val clsInfo: ClassInfo = ClassInfo.fromDex(parent, cls.typeIndex)
-    private val interfaces: Array<TypeBox> = Array(cls.interfaces.size) {
-        i -> parent.getType(cls.interfaces[i].toInt())
+    val interfaces: Array<ObjectType> = Array(cls.interfaces.size) {
+        i -> parent.getType(cls.interfaces[i].toInt()).getAsObjectType() ?: throw DecodeException("Interface type error.")
     }
     val methods: List<MethodNode> = addMethods(this, clsData)
     val fields: List<FieldNode> = addFields(this, cls, clsData)
