@@ -2,6 +2,8 @@ plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm' version '1.3.41'
     id 'groovy'
+    id 'application'
+    id 'distribution'
 }
 
 version = file('version').readLines().get(0)
@@ -57,4 +59,8 @@ task runTest(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     jvmArgs += "-noverify" // avoid: Expecting a stackmap frame
     args "${project.rootDir}/resource"
+}
+
+application {
+    mainClassName = 'com.dedx.tools.MainKt'
 }
