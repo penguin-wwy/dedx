@@ -419,6 +419,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             return slotType
         }
         when (slotType) {
+            SlotType.BOOLEAN,
             in SlotType.BYTE..SlotType.INT -> {
                 pushSlotInst(jvmOpcodes.ILOAD, slot)
             }

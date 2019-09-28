@@ -130,7 +130,10 @@ class StackFrame(val cursor: Int) {
             if (slot2type[entry.key] == null) {
                 slot2type[entry.key] = entry.value
             } else {
-                if (slot2type[entry.key] != entry.value) throw TypeConfliction("Stack frame [$cursor](slot type) can't merge [$frame] at ${entry.key}")
+                if (slot2type[entry.key] != entry.value) {
+                    // if type conflict, means this slot must be written in current instruction
+                    break
+                }
             }
         }
         for (entry in other.constantValue) {

@@ -26,6 +26,12 @@ class ClassTransformer(val clsNode: ClassNode, val filePath: String = ""): Opcod
         // TODO: set source file
 //        classWriter.visitSource()
 
+        clsNode.fields.forEach { field -> run {
+            fieldVisitor = classWriter.visitField(field.accFlags, field.fieldInfo.name, field.fieldInfo.type.descriptor(), null, null)
+            // TODO: fieldVisitor.visitAnnotation()
+            fieldVisitor.visitEnd()
+        } }
+
         var main: MethodNode? = null
         for (mthNode in clsNode.methods) {
             if (mthNode.isMain()) {
