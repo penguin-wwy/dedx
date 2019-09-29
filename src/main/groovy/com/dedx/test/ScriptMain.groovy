@@ -1,6 +1,5 @@
 package com.dedx.test
 
-import com.dedx.dex.struct.ClassNode
 import com.dedx.dex.struct.DexNode
 import com.dedx.transform.ClassTransformer
 
@@ -70,6 +69,8 @@ boolean assertResult(tag, String classFile) {
     switch (tag) {
         case "com.test.Base": return BaseAssert(classFile)
         case "AClass" : return AClassAssert(classFile)
+        case "BClass" : return BClassAssert(classFile)
+        case "CClass" : return CClassAssert(classFile)
         default: return true
     }
 }
@@ -96,9 +97,35 @@ def AClassAssert(String classFile) {
     return true
 }
 
+/* TODO fix */
+def BClassAssert(String classFile) {
+    def urls = new URL[1]
+    urls[0] = new File(classFile).toURI().toURL()
+    def loader = new URLClassLoader(urls, this.class.classLoader)
+    def bClass = loader.loadClass("BClass")
+    def descript = bClass.getMethod("descript")
+    for (con in bClass.getConstructors()) {
+        println con.genericParameterTypes
+    }
+    def constructor = bClass.getConstructor(String.class, boolean.class)
+    def instance = constructor.newInstance("BClass", true)
+    assert descript.invoke(instance)
+    return true
+}
+/************/
+
+def CClassAssert(String classFile) {
+    def loader = new DynamicClassLoader()
+    def baseClass = loader.defineClass("CClass", Files.readAllBytes(Paths.get(classFile)))
+    def toString = baseClass.getMethod("toString")
+    def instance = baseClass.getConstructor(int.class).newInstance(1)
+    assert toString.invoke(instance).equals("CClass1")
+    return true
+}
+
 static void main(String[] args) {
     println 'ScriptMain Groovy Script.'
-    def dexFilesToClass = ['com.test.Base' : 'Base.dex']
+    def dexFilesToClass = ['com.test.Base' : 'Base.dex', 'CClass' : 'CClass.dex']
     def dexFilesToJar = ['AClass' : 'AClasses.dex']
     try {
         for (entry in dexFilesToClass) {

@@ -24,7 +24,7 @@ class ClassTransformer(val clsNode: ClassNode, val filePath: String = ""): Opcod
                     i -> clsNode.interfaces[i].nameWithSlash()
                 } else null)
 
-        // TODO: set source file
+        // TODO: set source file need debug info
 //        classWriter.visitSource()
 
         clsNode.fields.forEach { field -> run {
