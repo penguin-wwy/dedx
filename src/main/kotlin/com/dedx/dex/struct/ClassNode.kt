@@ -42,8 +42,6 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
                 e.printStackTrace()
             }
         }
-
-        val accFlagsValue: Int = 0
     }
 
     companion object : ClassNodeFactory<ClassNode> {

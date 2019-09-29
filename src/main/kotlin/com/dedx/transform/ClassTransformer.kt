@@ -1,5 +1,6 @@
 package com.dedx.transform
 
+import com.android.dx.rop.code.AccessFlags
 import com.dedx.dex.struct.ClassNode
 import com.dedx.dex.struct.MethodNode
 import org.objectweb.asm.ClassWriter
@@ -15,7 +16,7 @@ class ClassTransformer(val clsNode: ClassNode, val filePath: String = ""): Opcod
 
     fun visitClass(): ClassTransformer {
         classWriter.visit(V1_8,
-                clsNode.accFlags,
+                if (!clsNode.isInterface()) clsNode.accFlags or AccessFlags.ACC_SUPER else clsNode.accFlags,
                 clsNode.clsInfo.fullName.replace('.', '/'),
                 null,
                 if (clsNode.hasSuperClass()) clsNode.superClassNameWithSlash() else "java/lang/Object",

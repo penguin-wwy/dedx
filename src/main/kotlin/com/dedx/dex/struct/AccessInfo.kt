@@ -4,22 +4,11 @@ import com.android.dx.rop.code.AccessFlags
 
 interface AccessInfo {
     val accFlags: Int
-    fun isPublic(): Boolean {
-        return (accFlags and AccessFlags.ACC_PUBLIC) != 0
-    }
-    fun isProtected(): Boolean {
-        return (accFlags and AccessFlags.ACC_PROTECTED) != 0
-    }
-    fun isPrivate(): Boolean {
-        return (accFlags and AccessFlags.ACC_PRIVATE) != 0
-    }
-    fun isFinal(): Boolean {
-        return (accFlags and AccessFlags.ACC_FINAL) != 0
-    }
-    fun isStatic(): Boolean {
-        return (accFlags and AccessFlags.ACC_STATIC) != 0
-    }
-    fun isAbstract(): Boolean {
-        return (accFlags and AccessFlags.ACC_ABSTRACT) != 0
-    }
+    fun isPublic() = (accFlags and AccessFlags.ACC_PUBLIC) != 0
+    fun isProtected() = (accFlags and AccessFlags.ACC_PROTECTED) != 0
+    fun isPrivate() = (accFlags and AccessFlags.ACC_PRIVATE) != 0
+    fun isFinal() = (accFlags and AccessFlags.ACC_FINAL) != 0
+    fun isStatic() = (accFlags and AccessFlags.ACC_STATIC) != 0
+    fun isAbstract() = (accFlags and AccessFlags.ACC_ABSTRACT) != 0
+    fun isInterface() =  (accFlags and AccessFlags.ACC_INTERFACE) != 0
 }
