@@ -5,12 +5,11 @@ import com.dedx.dex.struct.ClassNode
 import com.dedx.dex.struct.MethodNode
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.FieldVisitor
-import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Opcodes.V1_8
 import java.io.File
 import java.io.FileOutputStream
 
-class ClassTransformer(val clsNode: ClassNode, val filePath: String = ""): Opcodes {
+class ClassTransformer(val clsNode: ClassNode, val filePath: String = "") {
     val classWriter = ClassWriter(0)
     lateinit var fieldVisitor: FieldVisitor
 

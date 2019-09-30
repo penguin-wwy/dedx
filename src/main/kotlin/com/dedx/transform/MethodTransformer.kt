@@ -173,6 +173,11 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         return null
     }
 
+    private fun getStartJvmLabelInst() = when (jvmLabel) {
+        null -> LabelInst()
+        else -> LabelInst(jvmLabel as Label)
+    }
+
     private fun getStartJvmLine(): Int? {
         if (jvmLine != null) {
             val line: Int = jvmLine!!
@@ -183,37 +188,37 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun pushSingleInst(opcodes: Int)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateSingleInst(opcodes, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreateSingleInst(opcodes, getStartJvmLabelInst(), getStartJvmLine()))
     private fun pushSlotInst(opcodes: Int, slot: Int)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateSlotInst(opcodes, slot, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreateSlotInst(opcodes, slot, getStartJvmLabelInst(), getStartJvmLine()))
     private fun pushIntInst(opcodes: Int, number: Int)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateIntInst(opcodes, number, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreateIntInst(opcodes, number, getStartJvmLabelInst(), getStartJvmLine()))
     private fun pushLiteralInst(opcodes: Int, literal: Long, type: SlotType)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateLiteralInst(opcodes, literal, type, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreateLiteralInst(opcodes, literal, type, getStartJvmLabelInst(), getStartJvmLine()))
     private fun pushTypeInst(opcodes: Int, type: String)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateTypeInst(opcodes, type, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreateTypeInst(opcodes, type, getStartJvmLabelInst(), getStartJvmLine()))
     private fun pushConstantInst(opcodes: Int, constIndex: Int)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateConstantInst(opcodes, constIndex, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreateConstantInst(opcodes, constIndex, getStartJvmLabelInst(), getStartJvmLine()))
     private fun pushInvokeInst(invokeType: Int, mthIndex: Int)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateInvokeInst(invokeType, invokeType, mthIndex, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreateInvokeInst(invokeType, invokeType, mthIndex, getStartJvmLabelInst(), getStartJvmLine()))
     private fun pushJumpInst(opcodes: Int, target: Label)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateJumpInst(opcodes, target, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreateJumpInst(opcodes, LabelInst(target), getStartJvmLabelInst(), getStartJvmLine()))
     private fun pushFieldInst(opcodes: Int, fieldIndex: Int)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateFieldInst(opcodes, fieldIndex, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreateFieldInst(opcodes, fieldIndex, getStartJvmLabelInst(), getStartJvmLine()))
     private fun pushShadowInst(opcodes: Int, literal: Long?, vararg regNum: Int): ShadowInst {
-        val shadowInst = JvmInst.CreateShadowInst(opcodes, literal, regNum, getStartJvmLabel(), getStartJvmLine())
+        val shadowInst = JvmInst.CreateShadowInst(opcodes, literal, regNum, getStartJvmLabelInst(), getStartJvmLine())
                 as ShadowInst
         jvmInstManager.pushJvmInst(shadowInst)
         return shadowInst
     }
     private fun pushFillArrayDataPayloadInst(slot: Int, target: Int, type: SlotType)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateFillArrayDataPayloadInst(slot, target, type, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreateFillArrayDataPayloadInst(slot, target, type, getStartJvmLabelInst(), getStartJvmLine()))
     private fun pushPackedSwitchPayloadInst(target: Int, defLabel: Label)
-            = jvmInstManager.pushJvmInst(JvmInst.CreatePackedSwitchPayloadInst(target, defLabel, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreatePackedSwitchPayloadInst(target, LabelInst(defLabel), getStartJvmLabelInst(), getStartJvmLine()))
     private fun pushSparseSwitchPayloadInst(target: Int, defLabel: Label)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateSparseSwitchPayloadInst(target, defLabel, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreateSparseSwitchPayloadInst(target, LabelInst(defLabel), getStartJvmLabelInst(), getStartJvmLine()))
     private fun pushMultiANewArrayInsn(typeName: String, num: Int)
-            = jvmInstManager.pushJvmInst(JvmInst.CreateMultiANewArrayInsn(typeName, num, getStartJvmLabel(), getStartJvmLine()))
+            = jvmInstManager.pushJvmInst(JvmInst.CreateMultiANewArrayInsn(typeName, num, getStartJvmLabelInst(), getStartJvmLine()))
 
     private fun DecodedInstruction.regA() = slotNum(a)
     private fun DecodedInstruction.regB() = slotNum(b)

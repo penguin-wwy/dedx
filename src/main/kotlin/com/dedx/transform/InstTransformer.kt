@@ -41,8 +41,8 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
     private val shadowInsts = HashSet<Int>()
 
     fun pushJvmInst(jvmInst: JvmInst) {
-        if (jvmInst.label != null) {
-            labelMap[jvmInst.label!!] = jvmInstList.size
+        if (jvmInst.label.getValue() != null) {
+            labelMap[jvmInst.label.getValue()!!] = jvmInstList.size
         }
         if (jvmInst is ShadowInst) {
             shadowInsts.add(jvmInstList.size)
@@ -86,15 +86,15 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
                 val jumpInst = jvmInstList[i] as JumpInst
                 when (jumpInst.opcodes) {
                     in Opcodes.IFEQ..Opcodes.IF_ACMPNE, Opcodes.IFNULL, Opcodes.IFNONNULL -> {
-                        backwardJumpMap[i] = JumpTarget().setThen(i + 1).setElse(labelMap[jumpInst.target]
+                        backwardJumpMap[i] = JumpTarget().setThen(i + 1).setElse(labelMap[jumpInst.target.getValue()]
                                 ?: throw DecodeException(""))
                         addForwardJump(i + 1, i)
-                        addForwardJump(labelMap[jumpInst.target]!!, i)
+                        addForwardJump(labelMap[jumpInst.target.getValue()]!!, i)
                     }
                     Opcodes.GOTO -> {
-                        backwardJumpMap[i] = JumpTarget().setThen(labelMap[jumpInst.target]
+                        backwardJumpMap[i] = JumpTarget().setThen(labelMap[jumpInst.target.getValue()]
                                 ?: throw DecodeException(""))
-                        addForwardJump(labelMap[jumpInst.target]!!, i)
+                        addForwardJump(labelMap[jumpInst.target.getValue()]!!, i)
                     }
                 }
             }
