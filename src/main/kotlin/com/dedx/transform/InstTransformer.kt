@@ -52,6 +52,16 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
 
     fun removeJvmInst(jvmInst: JvmInst) = jvmInstList.remove(jvmInst)
 
+    fun removeJvmInsts(jvmInsts: Collection<JvmInst>) = jvmInstList.removeAll(jvmInsts)
+
+    fun instListSize() = jvmInstList.size
+
+    fun inst(index: Int) = jvmInstList[index]
+
+    fun instListIterator() = jvmInstList.listIterator()
+
+    fun instListIterator(index: Int) = jvmInstList.listIterator(index)
+
     fun visitJvmInst() {
         eliminateShadowInst()
         if (Configuration.optLevel == Configuration.NormalOpt) {

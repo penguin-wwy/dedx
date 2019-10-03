@@ -141,6 +141,10 @@ class SlotInst(override val opcodes: Int, override var label: LabelInst, val slo
         Opcodes.ALOAD, Opcodes.ASTORE -> SlotType.OBJECT
         else -> throw DecodeException("Can't get type from SlotInst")
     }
+
+    fun isLoadInst() = if (opcodes in Opcodes.ILOAD..Opcodes.ALOAD) true else false
+
+    fun isStoreInst() = if (opcodes in Opcodes.ISTORE..Opcodes.ASTORE) true else false
 }
 
 class IntInst(override val opcodes: Int, override var label: LabelInst, val number: Int): JvmInst {

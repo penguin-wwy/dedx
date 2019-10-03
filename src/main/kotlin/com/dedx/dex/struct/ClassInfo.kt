@@ -11,6 +11,8 @@ class ClassInfo private constructor(val type: TypeBox,
                                     val isInner: Boolean): Comparable<ClassInfo> {
 
     companion object {
+        const val ROOT_CLASS_NAME = "java/lang/Object"
+
         fun fromType(type: TypeBox): ClassInfo {
             return InfoStorage.classes.getOrPut(type) {
                 val fullName = type.getAsObjectType()?.typeName
