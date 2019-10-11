@@ -32,6 +32,17 @@ class JumpTarget {
     }
 }
 
+class TryCatchTable {
+    data class TCElement(var startInst: JvmInst, var endInst: JvmInst, var catchInst: JvmInst, var type: String?)
+
+    val elements = ArrayList<TCElement>()
+
+    fun addElement(startInst: JvmInst, endInst: JvmInst, catchInst: JvmInst, type: String?)
+            = elements.add(TCElement(startInst, endInst, catchInst, type))
+
+    fun empty() = elements.isEmpty()
+}
+
 class InstTransformer(val mthTransformer: MethodTransformer) {
     private val jvmInstList = LinkedList<JvmInst>()
 
@@ -39,6 +50,10 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
     private val forwardJumpMap = HashMap<Int, ArrayList<Int>>()
     private val labelMap = HashMap<Label, Int>()
     private val shadowInsts = HashSet<Int>()
+    private val tryCatchTable = TryCatchTable()
+
+    fun addTryCatchElement(startInst: JvmInst, endInst: JvmInst, catchInst: JvmInst, type: String?)
+            = tryCatchTable.addElement(startInst, endInst, catchInst, type)
 
     fun pushJvmInst(jvmInst: JvmInst) {
         if (jvmInst.label.getValue() != null) {
