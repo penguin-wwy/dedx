@@ -3,6 +3,7 @@ package com.dedx.transform
 import com.dedx.dex.struct.FieldInfo
 import com.dedx.dex.struct.MethodInfo
 import com.dedx.tools.Configuration
+import com.dedx.transform.passes.InstAnalysisPass
 import com.dedx.utils.DecodeException
 import org.objectweb.asm.Label
 import org.objectweb.asm.Opcodes
@@ -65,9 +66,16 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
         jvmInstList.add(jvmInst)
     }
 
-    fun removeJvmInst(jvmInst: JvmInst) = jvmInstList.remove(jvmInst)
+    fun removeJvmInst(jvmInst: JvmInst) {
+        InstAnalysisPass.jumpMap[jvmInst]?.also {
+            for (inst in it) {
+                inst.target = jvmInstList.listIterator(jvmInstList.indexOf(jvmInst)).next().label
+            }
+        }?.remove(jvmInst)
+        jvmInstList.remove(jvmInst)
+    }
 
-    fun removeJvmInsts(jvmInsts: Collection<JvmInst>) = jvmInstList.removeAll(jvmInsts)
+    fun removeJvmInsts(jvmInsts: Collection<JvmInst>) = jvmInsts.forEach { removeJvmInst(it) }
 
     fun instListSize() = jvmInstList.size
 

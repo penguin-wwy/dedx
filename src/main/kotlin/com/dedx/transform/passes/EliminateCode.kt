@@ -7,6 +7,8 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 object EliminateCodePass : Pass {
+    override fun initializaPass() { }
+
     override fun runOnFunction(instTrans: InstTransformer) {
         eliminateLoadAndStore(instTrans)
     }

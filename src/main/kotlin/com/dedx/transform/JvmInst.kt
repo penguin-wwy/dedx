@@ -212,7 +212,7 @@ class InvokeInst(override val opcodes: Int, label: LabelInst, val invokeType: In
     }
 }
 
-class JumpInst(override val opcodes: Int, label: LabelInst, val target: LabelInst): JvmInst2(label) {
+class JumpInst(override val opcodes: Int, label: LabelInst, var target: LabelInst): JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         transformer.methodVisitor().visitJumpInsn(opcodes, target.getValueOrCreate())
