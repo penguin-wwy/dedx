@@ -18,6 +18,7 @@ const val Sparse_Switch_Payload = -3
 
 class LabelInst() {
     private var value: Label? = null
+    var inst: JvmInst? = null
     constructor(label: Label): this() {
         value = label
     }
@@ -113,7 +114,13 @@ interface JvmInst: Opcodes {
     }
 }
 
-class SingleInst(override val opcodes: Int, override var label: LabelInst): JvmInst {
+abstract class JvmInst2(override var label: LabelInst): JvmInst {
+    init {
+        label.inst = this
+    }
+}
+
+class SingleInst(override val opcodes: Int, label: LabelInst): JvmInst2(label) {
     override var lineNumber: Int? = null
 
     override fun visitInst(transformer: InstTransformer) {
@@ -122,7 +129,7 @@ class SingleInst(override val opcodes: Int, override var label: LabelInst): JvmI
     }
 }
 
-class SlotInst(override val opcodes: Int, override var label: LabelInst, val slot: Int): JvmInst {
+class SlotInst(override val opcodes: Int, label: LabelInst, val slot: Int): JvmInst2(label) {
     override var lineNumber: Int? = null
 
     override fun visitInst(transformer: InstTransformer) {
@@ -147,14 +154,14 @@ class SlotInst(override val opcodes: Int, override var label: LabelInst, val slo
     fun isStoreInst() = if (opcodes in Opcodes.ISTORE..Opcodes.ASTORE) true else false
 }
 
-class IntInst(override val opcodes: Int, override var label: LabelInst, val number: Int): JvmInst {
+class IntInst(override val opcodes: Int, label: LabelInst, val number: Int): JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         transformer.methodVisitor().visitIntInsn(opcodes, number)
     }
 }
 
-class LiteralInst(override val opcodes: Int, override var label: LabelInst, val literal: Long, val type: SlotType): JvmInst {
+class LiteralInst(override val opcodes: Int, label: LabelInst, val literal: Long, val type: SlotType): JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         when (opcodes) {
@@ -171,7 +178,7 @@ class LiteralInst(override val opcodes: Int, override var label: LabelInst, val 
     }
 }
 
-class TypeInst(override val opcodes: Int, override var label: LabelInst, val typeString: String): JvmInst {
+class TypeInst(override val opcodes: Int, label: LabelInst, val typeString: String): JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthVisitor = transformer.methodVisitor()
@@ -182,7 +189,7 @@ class TypeInst(override val opcodes: Int, override var label: LabelInst, val typ
     }
 }
 
-class ConstantInst(override val opcodes: Int, override var label: LabelInst, val constIndex: Int): JvmInst {
+class ConstantInst(override val opcodes: Int, label: LabelInst, val constIndex: Int): JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthVisitor = transformer.methodVisitor()
@@ -192,7 +199,7 @@ class ConstantInst(override val opcodes: Int, override var label: LabelInst, val
     }
 }
 
-class InvokeInst(override val opcodes: Int, override var label: LabelInst, val invokeType: Int, val mthIndex: Int): JvmInst {
+class InvokeInst(override val opcodes: Int, label: LabelInst, val invokeType: Int, val mthIndex: Int): JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthInfo = transformer.methodInfo(mthIndex)
@@ -205,14 +212,14 @@ class InvokeInst(override val opcodes: Int, override var label: LabelInst, val i
     }
 }
 
-class JumpInst(override val opcodes: Int, override var label: LabelInst, val target: LabelInst): JvmInst {
+class JumpInst(override val opcodes: Int, label: LabelInst, val target: LabelInst): JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         transformer.methodVisitor().visitJumpInsn(opcodes, target.getValueOrCreate())
     }
 }
 
-class FieldInst(override val opcodes: Int, override var label: LabelInst, val fieldIndex: Int): JvmInst {
+class FieldInst(override val opcodes: Int, label: LabelInst, val fieldIndex: Int): JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val fieldInfo = transformer.fieldInfo(fieldIndex)
@@ -221,8 +228,8 @@ class FieldInst(override val opcodes: Int, override var label: LabelInst, val fi
     }
 }
 
-class FillArrayDataPayloadInst(override val opcodes: Int, override var label: LabelInst, val slot: Int,
-                               val target: Int, val type: SlotType): JvmInst {
+class FillArrayDataPayloadInst(override val opcodes: Int, label: LabelInst, val slot: Int,
+                               val target: Int, val type: SlotType): JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthVisitor = transformer.methodVisitor()
@@ -299,8 +306,8 @@ class FillArrayDataPayloadInst(override val opcodes: Int, override var label: La
 * otherwise throw java.lang.VerifyError: Expecting a stackmap frame
 */
 
-class PackedSwitchPayloadInst(override val opcodes: Int, override var label: LabelInst,
-                              val target: Int, val defaultLabel: LabelInst): JvmInst {
+class PackedSwitchPayloadInst(override val opcodes: Int, label: LabelInst,
+                              val target: Int, val defaultLabel: LabelInst): JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthVisitor = transformer.methodVisitor()
@@ -312,8 +319,8 @@ class PackedSwitchPayloadInst(override val opcodes: Int, override var label: Lab
     }
 }
 
-class SparseSwitchPayloadInst(override val opcodes: Int, override var label: LabelInst,
-                              val target: Int, val defaultLabel: LabelInst): JvmInst {
+class SparseSwitchPayloadInst(override val opcodes: Int, label: LabelInst,
+                              val target: Int, val defaultLabel: LabelInst): JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthVisitor = transformer.methodVisitor()
@@ -328,7 +335,7 @@ class SparseSwitchPayloadInst(override val opcodes: Int, override var label: Lab
     }
 }
 
-class MultiANewArrayInsn(override var label: LabelInst, var typeName: String, val numDimensions: Int): JvmInst {
+class MultiANewArrayInsn(label: LabelInst, var typeName: String, val numDimensions: Int): JvmInst2(label) {
     override val opcodes: Int = Opcodes.MULTIANEWARRAY
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
@@ -336,7 +343,7 @@ class MultiANewArrayInsn(override var label: LabelInst, var typeName: String, va
     }
 }
 
-class ShadowInst(override val opcodes: Int, override var label: LabelInst, val literal: Long?, val regs: IntArray): JvmInst {
+class ShadowInst(override val opcodes: Int, label: LabelInst, val literal: Long?, val regs: IntArray): JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {}
 
