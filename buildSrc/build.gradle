@@ -1,0 +1,29 @@
+plugins {
+    id 'java-gradle-plugin'
+}
+
+gradlePlugin {
+    plugins {
+        DepInjectPlugin {
+            id = 'DepInjectPlugin'
+            implementationClass = 'com.github.dedx.DepInjectPlugin'
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    implementation gradleApi()
+    implementation localGroovy()
+    compile group: 'org.ow2.asm', name: 'asm', version: '7.1'
+    compile group: 'org.ow2.asm', name: 'asm-util', version: '7.1'
+    compile group: 'org.ow2.asm', name: 'asm-analysis', version: '7.1'
+    compile group: 'org.ow2.asm', name: 'asm-commons', version: '7.1'
+    compile group: 'com.google.guava', name: 'guava', version: '28.0-jre'
+    
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
