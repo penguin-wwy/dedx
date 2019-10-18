@@ -1,6 +1,7 @@
 package com.github.dedx;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
@@ -9,7 +10,7 @@ import java.util.Set;
 public abstract class DepInjectTask extends DefaultTask {
 
     public boolean enable = false;
-    public Set<File> classFiles = null;
+    public FileCollection classFileCollection = null;
 
     @TaskAction
     public void depInjectAction() {

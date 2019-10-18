@@ -13,24 +13,15 @@ class DepInjectPlugin implements Plugin<Project> {
         def sourceSetsContainer = project.properties['sourceSets']
         def mainSourceSets = sourceSetsContainer.findByName('main')
         FileCollection outputs = mainSourceSets.output
-        def classesSet = Collections.emptySet()
-        for (File dir : outputs.getFiles()) {
-            classesSet.addAll(dir.listFiles(new FilenameFilter() {
-                @Override
-                boolean accept(File file, String s) {
-                    return s.endsWith(".class")
-                }
-            }))
-        }
 
         project.task('depInjectJava', type: JavaDepInjectTask) {
             enable = extension.enable
-            classFiles = classesSet
+            classFileCollection = outputs
         }
 
         project.task('depInjectKotlin', type: KotlinDepInjectTask) {
             enable = extension.enable
-            classFiles = classesSet
+            classFileCollection = outputs
         }
 
         project.tasks.getByName('compileJava').finalizedBy('depInjectJava')

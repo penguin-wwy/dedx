@@ -6,6 +6,8 @@ plugins {
     id 'distribution'
 }
 
+apply plugin: com.github.dedx.DepInjectPlugin
+
 version = file('version').readLines().get(0)
 sourceCompatibility = 1.8
 
