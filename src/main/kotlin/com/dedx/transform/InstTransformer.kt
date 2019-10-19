@@ -7,6 +7,7 @@ import com.dedx.transform.passes.InstAnalysisPass
 import com.dedx.utils.DecodeException
 import com.dedx.utils.annotation.DepClass
 import org.objectweb.asm.Label
+import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import java.util.*
 import kotlin.collections.ArrayList
@@ -43,6 +44,15 @@ class TryCatchTable {
             = elements.add(TCElement(startInst, endInst, catchInst, type))
 
     fun empty() = elements.isEmpty()
+
+    fun visit(methVisitor: MethodVisitor) {
+        for (element in elements) {
+            val startLabel = element.startInst.label
+            val endLabel = element.endInst.label
+            val handLabel = element.catchInst.label
+            methVisitor.visitTryCatchBlock(startLabel.getValue(), endLabel.getValue(), handLabel.getValue(), element.type)
+        }
+    }
 }
 
 class InstTransformer(val mthTransformer: MethodTransformer) {
@@ -97,6 +107,7 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
             jvmInst.visitLabel(this)
             jvmInst.visitInst(this)
         }
+        tryCatchTable.visit(this.methodVisitor())
     }
 
     fun methodVisitor() = mthTransformer.mthVisit

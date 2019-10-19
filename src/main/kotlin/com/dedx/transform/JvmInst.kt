@@ -9,6 +9,7 @@ import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
 import java.util.*
+import kotlin.reflect.KClass
 
 // extended instructions that cannot be referred to
 // representing Dalvik FILL_ARRAY_DATA instructions
@@ -38,6 +39,13 @@ interface JvmInst: Opcodes {
     val opcodes: Int
     var label: LabelInst
     var lineNumber: Int?
+
+    fun <T : JvmInst>getAs(klass: KClass<T>): T? {
+        if (this::class == klass) {
+            return this as T
+        }
+        return null
+    }
 
     open fun setLineNumber(lineNumber: Int?): JvmInst {
         if (lineNumber != null) {
