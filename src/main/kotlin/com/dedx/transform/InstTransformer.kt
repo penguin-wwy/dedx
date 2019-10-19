@@ -5,6 +5,7 @@ import com.dedx.dex.struct.MethodInfo
 import com.dedx.tools.Configuration
 import com.dedx.transform.passes.InstAnalysisPass
 import com.dedx.utils.DecodeException
+import com.dedx.utils.annotation.DepClass
 import org.objectweb.asm.Label
 import org.objectweb.asm.Opcodes
 import java.util.*
@@ -52,6 +53,7 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
     private val labelMap = HashMap<Label, Int>()
     private val shadowInsts = HashSet<Int>()
     private val tryCatchTable = TryCatchTable()
+    val jumpMap by lazy { HashMap<JvmInst, ArrayList<JumpInst>>() }
 
     fun addTryCatchElement(startInst: JvmInst, endInst: JvmInst, catchInst: JvmInst, type: String?)
             = tryCatchTable.addElement(startInst, endInst, catchInst, type)
@@ -66,8 +68,9 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
         jvmInstList.add(jvmInst)
     }
 
+    @DepClass(InstAnalysisPass::class, "runOnFunction", true)
     fun removeJvmInst(jvmInst: JvmInst) {
-        InstAnalysisPass.jumpMap[jvmInst]?.also {
+        jumpMap[jvmInst]?.also {
             for (inst in it) {
                 inst.target = jvmInstList.listIterator(jvmInstList.indexOf(jvmInst)).next().label
             }
