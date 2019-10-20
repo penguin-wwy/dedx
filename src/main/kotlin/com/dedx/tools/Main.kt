@@ -9,6 +9,19 @@ import org.apache.commons.cli.HelpFormatter
 import org.apache.commons.cli.Option
 import org.apache.commons.cli.Options
 import java.io.File
+import java.util.logging.ConsoleHandler
+import java.util.logging.FileHandler
+import java.util.logging.Level
+import java.util.logging.Logger
+
+fun configLog() {
+    val root = Logger.getLogger("")
+    root.level = if (Configuration.debug) Level.FINEST else Level.INFO
+    root.handlers.forEach { root.removeHandler(it) }
+    root.addHandler(Configuration.logFile?.let {
+        FileHandler(it)
+    } ?: ConsoleHandler())
+}
 
 fun createCmdTable(): Options {
     val help = Option.builder("h")
@@ -21,6 +34,8 @@ fun createCmdTable(): Options {
     val optFast = Option.builder().longOpt("fast").build()
     val optNor = Option.builder().longOpt("normal").build()
     val optOpt = Option.builder().longOpt("optimize").build()
+    val logFile = Option.builder().longOpt("log").desc("Specify log file").hasArg().build()
+    val debug = Option.builder("g").longOpt("debug").desc("Print debug info").build()
 
     val optTable = Options()
     optTable.addOption(help)
@@ -29,6 +44,8 @@ fun createCmdTable(): Options {
     optTable.addOption(optFast)
     optTable.addOption(optNor)
     optTable.addOption(optOpt)
+    optTable.addOption(logFile)
+    optTable.addOption(debug)
     return optTable
 }
 
@@ -55,7 +72,14 @@ fun configFromOptions(args: Array<String>, optTable: Options) {
         if (cmdTable.hasOption("optimize")) {
             Configuration.optLevel = Configuration.Optimized
         }
+        if (cmdTable.hasOption("log")) {
+            Configuration.logFile = cmdTable.getOptionValue("log")
+        }
+        if (cmdTable.hasOption("g") || cmdTable.hasOption("debug")) {
+            Configuration.debug = true
+        }
         Configuration.dexFiles = cmdTable.argList
+        configLog()
     } catch (e: Exception) {
         e.printStackTrace()
     }
