@@ -28,6 +28,9 @@ object EliminateCodePass : Pass {
                 if (slotInst.slot == instStack.peek().slot) {
                     needToClean.add(instStack.pop())
                     needToClean.add(slotInst)
+                } else {
+                    // better optmize
+                    instStack.clear()
                 }
             }
         }
