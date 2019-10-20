@@ -24,7 +24,7 @@ object EliminateCodePass : Pass {
             if (slotInst.isStoreInst()) {
                 instStack.push(slotInst)
             }
-            if (slotInst.isLoadInst()) {
+            if (slotInst.isLoadInst() && instStack.isNotEmpty()) {
                 if (slotInst.slot == instStack.peek().slot) {
                     needToClean.add(instStack.pop())
                     needToClean.add(slotInst)

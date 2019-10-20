@@ -56,8 +56,8 @@ interface JvmInst: Opcodes {
 
     open fun visitLabel(transformer: InstTransformer) {
         val label0 = label.getValue() ?: return
-        val line = lineNumber ?: return
         transformer.methodVisitor().visitLabel(label0)
+        val line = lineNumber ?: return
         transformer.methodVisitor().visitLineNumber(line, label0)
     }
     open fun visitInst(transformer: InstTransformer)

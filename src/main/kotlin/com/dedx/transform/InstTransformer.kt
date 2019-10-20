@@ -3,7 +3,9 @@ package com.dedx.transform
 import com.dedx.dex.struct.FieldInfo
 import com.dedx.dex.struct.MethodInfo
 import com.dedx.tools.Configuration
+import com.dedx.transform.passes.EliminateCodePass
 import com.dedx.transform.passes.InstAnalysisPass
+import com.dedx.transform.passes.RemoveNOPPass
 import com.dedx.utils.DecodeException
 import com.dedx.utils.annotation.DepClass
 import org.objectweb.asm.Label
@@ -46,11 +48,21 @@ class TryCatchTable {
     fun empty() = elements.isEmpty()
 
     fun visit(methVisitor: MethodVisitor) {
-        for (element in elements) {
-            val startLabel = element.startInst.label
-            val endLabel = element.endInst.label
-            val handLabel = element.catchInst.label
-            methVisitor.visitTryCatchBlock(startLabel.getValue(), endLabel.getValue(), handLabel.getValue(), element.type)
+        elements.forEach {
+            val startLabel = it.startInst.label
+            val endLabel = it.endInst.label
+            val handLabel = it.catchInst.label
+            methVisitor.visitTryCatchBlock(startLabel.getValue(), endLabel.getValue(), handLabel.getValue(), it.type)
+        }
+    }
+
+    fun updateIfNeed(oldInst: JvmInst, newInst: JvmInst) {
+        elements.forEach {
+            when (oldInst) {
+                it.startInst -> it.startInst = newInst
+                it.endInst -> it.endInst = newInst
+                it.catchInst -> it.catchInst = newInst
+            }
         }
     }
 }
@@ -80,11 +92,13 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
 
     @DepClass(InstAnalysisPass::class, "runOnFunction", true)
     fun removeJvmInst(jvmInst: JvmInst) {
+        val next = jvmInstList.listIterator(jvmInstList.indexOf(jvmInst)).next()
         jumpMap[jvmInst]?.also {
             for (inst in it) {
-                inst.target = jvmInstList.listIterator(jvmInstList.indexOf(jvmInst)).next().label
+                inst.target = next.label
             }
         }?.remove(jvmInst)
+        tryCatchTable.updateIfNeed(jvmInst, next)
         jvmInstList.remove(jvmInst)
     }
 
@@ -98,10 +112,14 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
 
     fun instListIterator(index: Int) = jvmInstList.listIterator(index)
 
+    fun imInstList() = jvmInstList as List<JvmInst>
+
     fun visitJvmInst() {
         eliminateShadowInst()
         if (Configuration.optLevel == Configuration.NormalOpt) {
-            // TODO
+            InstAnalysisPass.runOnFunction(this)
+            RemoveNOPPass.runOnFunction(this)
+            EliminateCodePass.runOnFunction(this)
         }
         for (jvmInst in jvmInstList) {
             jvmInst.visitLabel(this)
