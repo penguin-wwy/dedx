@@ -10,6 +10,7 @@ import com.dedx.dex.struct.type.BasicType
 import com.dedx.tools.Configuration
 import com.dedx.utils.DecodeException
 import com.dedx.utils.TypeConfliction
+import com.google.common.flogger.FluentLogger
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import kotlin.collections.ArrayList
@@ -26,6 +27,10 @@ object InvokeType {
 typealias jvmOpcodes = org.objectweb.asm.Opcodes
 
 class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransformer) {
+
+    companion object {
+        private val logger = FluentLogger.forEnclosingClass()
+    }
 
     val jvmInstManager = InstTransformer(this)
     val blockMap = HashMap<Label, BasicBlock>()
@@ -67,8 +72,6 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
     private fun visitNormal() {
         try {
-            mthVisit.visitCode()
-
             StackFrame.initInstFrame(mthNode)
             val entryFrame = StackFrame.getFrameOrPut(0)
             for (type in mthNode.argsList) {
@@ -90,13 +93,16 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
                 }
             }
             visitTryCatchBlock()
-            jvmInstManager.visitJvmInst()
-            // TODO: Calculate the number of slots and stack depth
-            mthVisit.visitMaxs(mthNode.regsCount, mthNode.regsCount)
-            mthVisit.visitEnd()
         } catch (e: Exception) {
-            e.printStackTrace()
+            logger.atSevere().withCause(e).log()
+            InstTransformer.throwErrorMethod(mthVisit)
+            return
         }
+        mthVisit.visitCode()
+        jvmInstManager.visitJvmInst()
+        // TODO: Calculate the number of slots and stack depth
+        mthVisit.visitMaxs(mthNode.regsCount, mthNode.regsCount)
+        mthVisit.visitEnd()
     }
 
     private fun visitOptimization() {

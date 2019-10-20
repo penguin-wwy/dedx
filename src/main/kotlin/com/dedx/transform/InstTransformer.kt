@@ -8,6 +8,7 @@ import com.dedx.transform.passes.InstAnalysisPass
 import com.dedx.transform.passes.RemoveNOPPass
 import com.dedx.utils.DecodeException
 import com.dedx.utils.annotation.DepClass
+import com.google.common.flogger.FluentLogger
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
@@ -68,6 +69,25 @@ class TryCatchTable {
 }
 
 class InstTransformer(val mthTransformer: MethodTransformer) {
+    companion object {
+        private val logger = FluentLogger.forEnclosingClass()
+        fun throwErrorMethod(mthVisitor: MethodVisitor) {
+            mthVisitor.visitCode()
+            mthVisitor.visitTypeInsn(Opcodes.NEW, "java/lang/RuntimeException")
+            mthVisitor.visitInsn(Opcodes.DUP)
+            mthVisitor.visitLdcInsn("Error occur, please see details in log")
+            mthVisitor.visitMethodInsn(
+                    Opcodes.INVOKESPECIAL,
+                    "java/lang/RuntimeException",
+                    "<init>",
+                    "(Ljava/lang/String;)V",
+                    false)
+            mthVisitor.visitInsn(Opcodes.ATHROW)
+            mthVisitor.visitMaxs(0, 0)
+            mthVisitor.visitEnd()
+        }
+    }
+
     private val jvmInstList = LinkedList<JvmInst>()
 
     private val backwardJumpMap = HashMap<Int, JumpTarget>()
