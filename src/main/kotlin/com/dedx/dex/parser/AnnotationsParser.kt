@@ -4,10 +4,13 @@ import com.android.dex.Dex
 import com.dedx.dex.struct.*
 import com.dedx.dex.struct.Annotation
 import com.dedx.utils.DecodeException
+import com.google.common.flogger.FluentLogger
 
 class AnnotationsParser(val dex: DexNode, val cls: ClassNode) {
 
     companion object {
+        private val logger = FluentLogger.forEnclosingClass()
+
         private val VISIBILITIES = enumValues<Visibility>()
 
         fun readAnnotation(dex: DexNode, section: Dex.Section, readVisibility: Boolean): Annotation {
@@ -48,19 +51,31 @@ class AnnotationsParser(val dex: DexNode, val cls: ClassNode) {
         for (i in 0 until fieldsCount) {
             val fieldNode = cls.searchFieldById(section.readInt())
             if (fieldNode?.setValue(AttrKey.ANNOTATION, readAnnotationSet(section.readInt())) == null) {
-                // out log
+                logger.atWarning().log("Not find [${cls.clsInfo.fullName}] field " +
+                        "to add annotation ${readAnnotationSet(section.readInt())}")
             }
         }
 
         for (i in 0 until annotatedMethodCount) {
             val methodNode = cls.searchMethodById(section.readInt())
             if (methodNode?.setValue(AttrKey.ANNOTATION, readAnnotationSet(section.readInt())) == null) {
-                // out log
+                logger.atWarning().log("Not find [${cls.clsInfo.fullName}] method " +
+                        "to add annotation ${readAnnotationSet(section.readInt())}")
             }
         }
 
         for (i in 0 until annotationParametersCount) {
-            // TODO
+            val methodNode = cls.searchMethodById(section.readInt())
+            val ss = dex.openSection(section.readInt())
+            val size = ss.readInt()
+            val annotationList = ArrayList<AttrValueList>()
+            for (index in 0 until size) {
+                annotationList.add(readAnnotationSet(ss.readInt()))
+            }
+            if (methodNode?.setValue(AttrKey.MTH_PARAMETERS_ANNOTATION, AttrValueList(annotationList)) == null) {
+                logger.atWarning().log("Not find [${cls.clsInfo.fullName}] method " +
+                        "to add parameters annotation ${AttrValueList(annotationList)}")
+            }
         }
     }
 

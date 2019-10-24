@@ -36,6 +36,7 @@ enum class AttrKey {
     NAME,
 
     ANNOTATION,
+    MTH_PARAMETERS_ANNOTATION,
     CONST;
 }
 
