@@ -103,7 +103,7 @@ class StackFrame(val cursor: Int) {
     val arrayType = HashMap<Int, ArrayList<SlotType>>()
     val preFrames = TreeSet<Int>()
 
-    fun init(): StackFrame {
+    fun init() = apply {
         slot2type.clear()
         constantValue.clear()
         arrayType.clear()
