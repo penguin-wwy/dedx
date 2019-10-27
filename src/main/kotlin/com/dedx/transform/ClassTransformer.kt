@@ -1,19 +1,19 @@
 package com.dedx.transform
 
 import com.android.dx.rop.code.AccessFlags
-import com.dedx.dex.struct.ClassInfo
-import com.dedx.dex.struct.ClassNode
-import com.dedx.dex.struct.MethodNode
+import com.dedx.dex.struct.*
 import com.google.common.flogger.FluentLogger
+import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.FieldVisitor
 import org.objectweb.asm.Opcodes.V1_8
 import java.io.File
 import java.io.FileOutputStream
 
-class ClassTransformer(val clsNode: ClassNode, val filePath: String = "") {
+class ClassTransformer(private val clsNode: ClassNode, private val filePath: String = "") {
     val classWriter = ClassWriter(0)
     lateinit var fieldVisitor: FieldVisitor
+    lateinit var annotationVisitor: AnnotationVisitor
 
     companion object {
         private val logger = FluentLogger.forEnclosingClass()
@@ -32,13 +32,8 @@ class ClassTransformer(val clsNode: ClassNode, val filePath: String = "") {
         // TODO: set source file need debug info
 //        classWriter.visitSource()
 
-        clsNode.fields.forEach { field ->
-            run {
-                fieldVisitor = classWriter.visitField(field.accFlags, field.fieldInfo.name, field.fieldInfo.type.descriptor(), null, null)
-                // TODO: fieldVisitor.visitAnnotation()
-                fieldVisitor.visitEnd()
-            }
-        }
+        visitClassAnnotation()
+        visitField()
 
         var main: MethodNode? = null
         for (mthNode in clsNode.methods) {
@@ -51,6 +46,39 @@ class ClassTransformer(val clsNode: ClassNode, val filePath: String = "") {
         if (main != null) MethodTransformer(main, this).visitMethod()
         classWriter.visitEnd()
         return this
+    }
+
+    private fun visitField() {
+        val annotationVisit = fun (fn: FieldNode, fv: FieldVisitor) {
+            val annoList = fn.attributes[AttrKey.ANNOTATION]?.getAsAttrValueList() ?: return
+            for (value in annoList) {
+                val anno = value.getAsAnnotation() ?: continue
+                annotationVisitor = fv.visitAnnotation(anno.type.descriptor(), anno.hasVisibility())
+                for (annotationValue in anno.values) {
+                    annotationVisitor.visit(annotationValue.key, annotationValue.value.value)
+                }
+                annotationVisitor.visitEnd()
+            }
+        }
+        clsNode.fields.forEach { field ->
+            run {
+                fieldVisitor = classWriter.visitField(field.accFlags, field.fieldInfo.name, field.fieldInfo.type.descriptor(), null, null)
+                annotationVisit(field, fieldVisitor)
+                fieldVisitor.visitEnd()
+            }
+        }
+    }
+
+    private fun visitClassAnnotation() {
+        val annoList = clsNode.attributes[AttrKey.ANNOTATION]?.getAsAttrValueList() ?: return
+        for (value in annoList) {
+            val anno = value.getAsAnnotation() ?: continue
+            annotationVisitor = classWriter.visitAnnotation(anno.type.descriptor(), anno.hasVisibility())
+            for (annotationValue in anno.values) {
+                annotationVisitor.visit(annotationValue.key, annotationValue.value.value)
+            }
+            annotationVisitor.visitEnd()
+        }
     }
 
     fun dump(): String {
