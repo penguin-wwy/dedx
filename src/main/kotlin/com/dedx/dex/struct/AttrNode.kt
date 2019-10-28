@@ -73,9 +73,11 @@ open class AttrValue(val mark: Int, open val value: Any?) {
         Enc.ENC_TRY_ENTRY -> value as TryCatchBlock
         else -> null
     }
+
+    fun getAsAttrValueList() = if (this is AttrValueList) this else null
 }
 
-open class AttrValueList(override val value: List<AttrValue> = ArrayList()) : AttrValue(Enc.ENC_ARRAY, value) {
+open class AttrValueList(override val value: List<AttrValue> = ArrayList()) : AttrValue(Enc.ENC_ARRAY, value), Iterable<AttrValue> {
     companion object {
         val EMPTY = AttrValueList(Collections.emptyList())
     }
@@ -88,6 +90,8 @@ open class AttrValueList(override val value: List<AttrValue> = ArrayList()) : At
         strBuilder.append("]")
         return strBuilder.toString()
     }
+
+    override fun iterator() = value.iterator()
 }
 
 class AttrValueLabel(override val value: Label) : AttrValue(Enc.ENC_LABEL, value) {

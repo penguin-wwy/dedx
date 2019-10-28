@@ -53,7 +53,36 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
         clsTransformer.classWriter.visitMethod(mthNode.accFlags, mthNode.mthInfo.name, mthNode.descriptor, null, null)
     }
 
-    fun visitMethod() {
+    fun visitMethodAnnotation() = apply {
+        val values = mthNode.attributes[AttrKey.ANNOTATION]?.getAsAttrValueList() ?: return@apply
+        for (value in values) {
+            val annoClazz = value.getAsAnnotation() ?: continue
+            val annoVisitor = mthVisit.visitAnnotation(annoClazz.type.descriptor(), annoClazz.hasVisibility())
+            for (annoValue in annoClazz.values) {
+                annoVisitor.visit(annoValue.key, annoValue.value.value)
+            }
+            annoVisitor.visitEnd()
+        }
+
+
+        val paramAnnoVisit = fun(avs: AttrValueList, i: Int) {
+            for (value in avs) {
+                val annoClazz = value.getAsAnnotation() ?: continue
+                val annoVisitor = mthVisit.visitParameterAnnotation(i, annoClazz.type.descriptor(), annoClazz.hasVisibility())
+                for (annoValue in annoClazz.values) {
+                    annoVisitor.visit(annoValue.key, annoValue.value.value)
+                }
+                annoVisitor.visitEnd()
+            }
+        }
+        val paramValues = mthNode.attributes[AttrKey.MTH_PARAMETERS_ANNOTATION]?.getAsAttrValueList() ?: return@apply
+        for (i in paramValues.value.indices) {
+            val annoValues = paramValues.value[i].getAsAttrValueList() ?: continue
+            paramAnnoVisit(annoValues, i)
+        }
+    }
+
+    fun visitMethodBody() {
         if (mthNode.noCode) {
             if (mthNode.isAbstract()) {
                 mthVisit.visitEnd()

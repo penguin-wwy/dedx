@@ -13,6 +13,8 @@ class Annotation(val visibility: Visibility?, val type: TypeBox, val values: Map
         return values["value"]
     }
 
+    fun hasVisibility() = visibility != null
+
     override fun toString(): String {
         val strBuilder = StringBuilder("{")
         for (entry in values) {

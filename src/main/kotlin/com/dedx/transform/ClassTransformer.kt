@@ -34,27 +34,22 @@ class ClassTransformer(private val clsNode: ClassNode, private val filePath: Str
 
         visitClassAnnotation()
         visitField()
-
-        var main: MethodNode? = null
-        for (mthNode in clsNode.methods) {
-            if (mthNode.isMain()) {
-                main = mthNode
-                continue
-            }
-            MethodTransformer(mthNode, this).visitMethod()
-        }
-        if (main != null) MethodTransformer(main, this).visitMethod()
+        visitMethod()
         classWriter.visitEnd()
         return this
+    }
+
+    private fun visitMethod() {
+        clsNode.methods.forEach { MethodTransformer(it, this).visitMethodAnnotation().visitMethodBody() }
     }
 
     private fun visitField() {
         val annotationVisit = fun (fn: FieldNode, fv: FieldVisitor) {
             val annoList = fn.attributes[AttrKey.ANNOTATION]?.getAsAttrValueList() ?: return
             for (value in annoList) {
-                val anno = value.getAsAnnotation() ?: continue
-                annotationVisitor = fv.visitAnnotation(anno.type.descriptor(), anno.hasVisibility())
-                for (annotationValue in anno.values) {
+                val annoClazz = value.getAsAnnotation() ?: continue
+                annotationVisitor = fv.visitAnnotation(annoClazz.type.descriptor(), annoClazz.hasVisibility())
+                for (annotationValue in annoClazz.values) {
                     annotationVisitor.visit(annotationValue.key, annotationValue.value.value)
                 }
                 annotationVisitor.visitEnd()
@@ -72,9 +67,9 @@ class ClassTransformer(private val clsNode: ClassNode, private val filePath: Str
     private fun visitClassAnnotation() {
         val annoList = clsNode.attributes[AttrKey.ANNOTATION]?.getAsAttrValueList() ?: return
         for (value in annoList) {
-            val anno = value.getAsAnnotation() ?: continue
-            annotationVisitor = classWriter.visitAnnotation(anno.type.descriptor(), anno.hasVisibility())
-            for (annotationValue in anno.values) {
+            val annoClazz = value.getAsAnnotation() ?: continue
+            annotationVisitor = classWriter.visitAnnotation(annoClazz.type.descriptor(), annoClazz.hasVisibility())
+            for (annotationValue in annoClazz.values) {
                 annotationVisitor.visit(annotationValue.key, annotationValue.value.value)
             }
             annotationVisitor.visitEnd()
