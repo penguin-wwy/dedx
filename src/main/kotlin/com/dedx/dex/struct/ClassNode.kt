@@ -6,6 +6,7 @@ import com.dedx.dex.parser.AnnotationsParser
 import com.dedx.dex.parser.StaticValuesParser
 import com.dedx.dex.struct.type.ObjectType
 import com.dedx.utils.DecodeException
+import com.google.common.flogger.FluentLogger
 import java.lang.Exception
 import java.util.*
 import kotlin.collections.ArrayList
@@ -38,13 +39,13 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
             try {
                 AnnotationsParser(parent, this).parse(offset)
             } catch (e: Exception) {
-                // TODO
-                e.printStackTrace()
+                logger.atWarning().withCause(e).log()
             }
         }
     }
 
     companion object : ClassNodeFactory<ClassNode> {
+        private val logger = FluentLogger.forEnclosingClass()
 
         fun addMethods(parent: ClassNode, clsData: ClassData?): List<MethodNode> {
             if (clsData == null) {
