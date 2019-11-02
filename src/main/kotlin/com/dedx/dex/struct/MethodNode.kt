@@ -123,6 +123,7 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
 
             val tryEntry = codeList[offset] ?: throw DecodeException("Try block first instruction is null.")
             tryEntry.setTryEntry(catchBlock)
+            catchBlock.instList.add(tryEntry)
             offset++
             while ((offset <= end) && (offset >= 0)) {
                 val insn = codeList[offset]

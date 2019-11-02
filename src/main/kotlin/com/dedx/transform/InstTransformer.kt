@@ -59,11 +59,12 @@ class TryCatchTable {
 
     fun updateIfNeed(oldInst: JvmInst, newInst: JvmInst) {
         elements.forEach {
-            when (oldInst) {
-                it.startInst -> it.startInst = newInst
-                it.endInst -> it.endInst = newInst
-                it.catchInst -> it.catchInst = newInst
-            }
+            if (it.startInst == oldInst)
+                it.startInst = newInst
+            if (it.endInst == oldInst)
+                it.endInst = newInst
+            if (it.catchInst == oldInst)
+                it.catchInst = newInst
         }
     }
 }
@@ -112,7 +113,7 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
 
     @DepClass(InstAnalysisPass::class, "runOnFunction", true)
     fun removeJvmInst(jvmInst: JvmInst) {
-        val next = jvmInstList.listIterator(jvmInstList.indexOf(jvmInst)).next()
+        val next = jvmInstList.listIterator(jvmInstList.indexOf(jvmInst) + 1).next()
         jumpMap[jvmInst]?.also {
             for (inst in it) {
                 inst.target = next.label
