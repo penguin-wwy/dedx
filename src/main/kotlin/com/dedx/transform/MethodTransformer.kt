@@ -1022,8 +1022,10 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitNewInstance(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        val clazz = dexNode.getType(dalvikInst.index).getAsObjectType() ?: throw DecodeException("New-Instance error", offset)
+        pushTypeInst(jvmOpcodes.NEW, clazz.nameWithSlash())
+        pushSingleInst(jvmOpcodes.DUP)
         var nextInst = mthNode.getNextInst(offset) ?: throw DecodeException("New-Instance error", offset)
-//        if (nextInst.instruction.opcode != Opcodes.INVOKE_DIRECT) throw DecodeException("New-Instance error", offset)
         skipInst = 1
         while (nextInst.instruction.opcode != Opcodes.INVOKE_DIRECT) {
             normalProcess(nextInst)
@@ -1031,8 +1033,17 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
             skipInst ++
         }
         val mthInfo = MethodInfo.fromDex(dexNode, nextInst.instruction.index)
-        pushTypeInst(jvmOpcodes.NEW, mthInfo.declClass.className())
-        pushSingleInst(jvmOpcodes.DUP)
+        StackFrame.getFrameOrExcept(nextInst.cursor).merge()
+        // constructor ignore this pointer
+        for(i in 1 until nextInst.instruction.registerCount) {
+            when (i) {
+                1 -> visitLoad(nextInst.instruction.regB(), SlotType.convert(mthInfo.args[i - 1])!!, nextInst.cursor)
+                2 -> visitLoad(nextInst.instruction.regC(), SlotType.convert(mthInfo.args[i - 1])!!, nextInst.cursor)
+                3 -> visitLoad(nextInst.instruction.regD(), SlotType.convert(mthInfo.args[i - 1])!!, nextInst.cursor)
+                4 -> visitLoad(nextInst.instruction.regE(), SlotType.convert(mthInfo.args[i - 1])!!, nextInst.cursor)
+                else -> throw DecodeException("invoke instruction register number error.", nextInst.cursor)
+            }
+        }
         pushInvokeInst(InvokeType.INVOKESPECIAL, nextInst.instruction.index)
         visitStore(SlotType.OBJECT, dalvikInst.regA(), frame)
     }

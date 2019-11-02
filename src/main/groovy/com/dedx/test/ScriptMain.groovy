@@ -71,6 +71,7 @@ boolean assertResult(tag, String classFile) {
         case "AClass" : return AClassAssert(classFile)
         case "BClass" : return BClassAssert(classFile)
         case "CClass" : return CClassAssert(classFile)
+        case "TryCatchTest" : return TryCatchAssert(classFile)
         default: return true
     }
 }
@@ -123,9 +124,17 @@ def CClassAssert(String classFile) {
     return true
 }
 
+def TryCatchAssert(String classFile) {
+    def loader = new DynamicClassLoader()
+    def tryCatchClass = loader.defineClass("TryCatchTest", Files.readAllBytes(Paths.get(classFile)))
+    def toString = tryCatchClass.getMethod("throwTest")
+    assert toString.invoke(null).equals("Throw runtime")
+    return true
+}
+
 static void main(String[] args) {
     println 'ScriptMain Groovy Script.'
-    def dexFilesToClass = ['com.test.Base' : 'Base.dex', 'CClass' : 'CClass.dex']
+    def dexFilesToClass = ['com.test.Base' : 'Base.dex', 'CClass' : 'CClass.dex', 'TryCatchTest' : 'TryCatchTest.dex']
     def dexFilesToJar = ['AClass' : 'AClasses.dex']
     try {
         for (entry in dexFilesToClass) {
