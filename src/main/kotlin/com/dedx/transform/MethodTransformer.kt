@@ -144,7 +144,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     private fun visitTryCatchBlock() {
         for (tcBlock in mthNode.tryBlockList) {
             val start = tcBlock.instList[0]
-            val end = tcBlock.instList.last()
+            val end = mthNode.getNextInst(tcBlock.instList.last().cursor) ?: throw DecodeException("try block end out of bounds")
             if (start.getLabel() == null) {
                 start.setLable(Label())
             }
@@ -965,7 +965,7 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     private fun visitThrow(dalvikInst: OneRegisterDecodedInstruction, offset: Int) {
         try {
             val regA = dalvikInst.regA()
-            StackFrame.checkType(SlotType.OBJECT, offset, regA)
+//            StackFrame.checkType(SlotType.OBJECT, offset, regA)
             visitLoad(regA, SlotType.OBJECT, offset)
             pushSingleInst(jvmOpcodes.ATHROW)
         } catch (ex: Exception) {
@@ -1022,9 +1022,14 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
     }
 
     private fun visitNewInstance(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
-        val nextInst = mthNode.getNextInst(offset) ?: throw DecodeException("New-Instance error", offset)
-        if (nextInst.instruction.opcode != Opcodes.INVOKE_DIRECT) throw DecodeException("New-Instance error", offset)
+        var nextInst = mthNode.getNextInst(offset) ?: throw DecodeException("New-Instance error", offset)
+//        if (nextInst.instruction.opcode != Opcodes.INVOKE_DIRECT) throw DecodeException("New-Instance error", offset)
         skipInst = 1
+        while (nextInst.instruction.opcode != Opcodes.INVOKE_DIRECT) {
+            normalProcess(nextInst)
+            nextInst = mthNode.getNextInst(nextInst.cursor) ?: throw DecodeException("New-Instance error", offset)
+            skipInst ++
+        }
         val mthInfo = MethodInfo.fromDex(dexNode, nextInst.instruction.index)
         pushTypeInst(jvmOpcodes.NEW, mthInfo.declClass.className())
         pushSingleInst(jvmOpcodes.DUP)

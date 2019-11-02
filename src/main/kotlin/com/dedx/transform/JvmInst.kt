@@ -132,7 +132,6 @@ class SingleInst(override val opcodes: Int, label: LabelInst): JvmInst2(label) {
     override var lineNumber: Int? = null
 
     override fun visitInst(transformer: InstTransformer) {
-        if (opcodes == Opcodes.NOP) return
         transformer.methodVisitor().visitInsn(opcodes)
     }
 }
