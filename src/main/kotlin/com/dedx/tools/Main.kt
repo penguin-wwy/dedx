@@ -4,15 +4,15 @@ import com.dedx.dex.struct.ClassNode
 import com.dedx.dex.struct.DexNode
 import com.dedx.transform.ClassTransformer
 import com.dedx.utils.DecodeException
-import org.apache.commons.cli.DefaultParser
-import org.apache.commons.cli.HelpFormatter
-import org.apache.commons.cli.Option
-import org.apache.commons.cli.Options
+import org.apache.commons.cli.*
 import java.io.File
+import java.lang.RuntimeException
+import java.util.*
 import java.util.logging.ConsoleHandler
 import java.util.logging.FileHandler
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.system.exitProcess
 
 fun configLog() {
     val root = Logger.getLogger("")
@@ -31,9 +31,9 @@ fun createCmdTable(): Options {
     val output = Option.builder("o")
             .longOpt("output")
             .hasArg().argName("dirname").desc("Specify output dirname").build()
-    val optFast = Option.builder().longOpt("fast").build()
-    val optNor = Option.builder().longOpt("normal").build()
-    val optOpt = Option.builder().longOpt("optimize").build()
+    val optLevel = Option.builder()
+            .longOpt("opt").hasArg().argName("[fast|normal|optimize]")
+            .desc("Specify optimization level").build()
     val logFile = Option.builder().longOpt("log").desc("Specify log file").hasArg().build()
     val debug = Option.builder("g").longOpt("debug").desc("Print debug info").build()
 
@@ -41,9 +41,7 @@ fun createCmdTable(): Options {
     optTable.addOption(help)
     optTable.addOption(version)
     optTable.addOption(output)
-    optTable.addOption(optFast)
-    optTable.addOption(optNor)
-    optTable.addOption(optOpt)
+    optTable.addOption(optLevel)
     optTable.addOption(logFile)
     optTable.addOption(debug)
     return optTable
@@ -54,23 +52,24 @@ fun configFromOptions(args: Array<String>, optTable: Options) {
     try {
         val cmdTable = parser.parse(optTable, args)
         if (cmdTable.hasOption("v") || cmdTable.hasOption("version")) {
-            System.exit(0)
+            exitProcess(0)
         }
         if (cmdTable.hasOption("h") || cmdTable.hasOption("help")) {
             HelpFormatter().printHelp("command [options] <dexfile>", optTable)
-            System.exit(0)
+            exitProcess(0)
         }
         if (cmdTable.hasOption("o") || cmdTable.hasOption("output")) {
             Configuration.outDir = cmdTable.getOptionValue("o") ?: cmdTable.getOptionValue("output")
         }
-        if (cmdTable.hasOption("fast")) {
-            Configuration.optLevel = Configuration.NormalFast
-        }
-        if (cmdTable.hasOption("normal")) {
-            Configuration.optLevel = Configuration.NormalOpt
-        }
-        if (cmdTable.hasOption("optimize")) {
-            Configuration.optLevel = Configuration.Optimized
+        if (cmdTable.hasOption("opt")) {
+            Configuration.optLevel = when (cmdTable.getOptionValue("opt")) {
+                "fast" -> Configuration.NormalFast
+                "normal" -> Configuration.NormalOpt
+                "optimize" -> Configuration.Optimized
+                else -> {
+                    throw RuntimeException("Invalid parameter for 'opt'")
+                }
+            }
         }
         if (cmdTable.hasOption("log")) {
             Configuration.logFile = cmdTable.getOptionValue("log")
@@ -81,7 +80,8 @@ fun configFromOptions(args: Array<String>, optTable: Options) {
         Configuration.dexFiles = cmdTable.argList
         configLog()
     } catch (e: Exception) {
-        e.printStackTrace()
+        System.err.println("Argument error: ${e.message}")
+        exitProcess(1)
     }
 }
 
