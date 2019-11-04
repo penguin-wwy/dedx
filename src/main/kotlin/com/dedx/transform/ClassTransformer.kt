@@ -14,6 +14,7 @@ class ClassTransformer(private val clsNode: ClassNode, private val filePath: Str
     val classWriter = ClassWriter(0)
     lateinit var fieldVisitor: FieldVisitor
     lateinit var annotationVisitor: AnnotationVisitor
+    lateinit var sourceFile: String
 
     companion object {
         private val logger = FluentLogger.forEnclosingClass()
@@ -29,12 +30,10 @@ class ClassTransformer(private val clsNode: ClassNode, private val filePath: Str
                     clsNode.interfaces[i].nameWithSlash()
                 } else null)
 
-        // TODO: set source file need debug info
-//        classWriter.visitSource()
-
         visitClassAnnotation()
         visitField()
         visitMethod()
+        classWriter.visitSource(sourceFile, null)
         classWriter.visitEnd()
         return this
     }

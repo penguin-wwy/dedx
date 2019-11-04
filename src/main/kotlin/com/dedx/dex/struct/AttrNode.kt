@@ -33,6 +33,7 @@ enum class AttrKey {
     LABEL,
     TRY_ENTRY,
     LINENUMBER,
+    SOURCE_FILE,
     NAME,
 
     ANNOTATION,

@@ -26,7 +26,7 @@ object InvokeType {
 
 typealias jvmOpcodes = org.objectweb.asm.Opcodes
 
-class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransformer) {
+class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: ClassTransformer) {
 
     companion object {
         private val logger = FluentLogger.forEnclosingClass()
@@ -51,6 +51,10 @@ class MethodTransformer(val mthNode: MethodNode, val clsTransformer: ClassTransf
 
     val mthVisit: MethodVisitor by lazy {
         clsTransformer.classWriter.visitMethod(mthNode.accFlags, mthNode.mthInfo.name, mthNode.descriptor, null, null)
+    }
+
+    init {
+        clsTransformer.sourceFile = mthNode.getSourceFile() ?: ""
     }
 
     fun visitMethodAnnotation() = apply {

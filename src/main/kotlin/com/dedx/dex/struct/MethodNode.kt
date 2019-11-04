@@ -172,6 +172,12 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
         attributes[AttrKey.LINENUMBER] = AttrValue(Enc.ENC_INT, num)
     }
 
+    fun setSourceFile(fileName: String) {
+        attributes[AttrKey.SOURCE_FILE] = AttrValue(Enc.ENC_STRING, fileName)
+    }
+
+    fun getSourceFile() = attributes[AttrKey.SOURCE_FILE]?.getAsString()
+
     fun getPrevInst(index: Int): InstNode? {
         var offset = index - 1
         while (offset >= 0) {

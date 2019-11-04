@@ -108,7 +108,7 @@ class DebugInfoParser(val mth: MethodNode, val insnList: Array<InstNode?>, debug
                     val idx = section.readUleb128() - 1
                     if (idx != DexNode.NO_INDEX) {
                         val sourceFile = dex.getString(idx)
-                        // TODO: set source file
+                        mth.setSourceFile(sourceFile)
                     }
                 }
                 else -> {
