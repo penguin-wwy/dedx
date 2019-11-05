@@ -104,7 +104,7 @@ fun runMain(): Int {
             }
         }
         return 0
-    } catch (e: Exception) {
+    } catch (e: Throwable) {
         e.printStackTrace()
     }
     return 1
@@ -112,5 +112,5 @@ fun runMain(): Int {
 
 fun main(args: Array<String>) {
     configFromOptions(args, createCmdTable())
-    System.exit(runMain())
+    exitProcess(runMain())
 }

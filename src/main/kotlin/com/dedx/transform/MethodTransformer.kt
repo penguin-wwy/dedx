@@ -48,6 +48,8 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
     var skipInst = 0 // mark instruction number which skip
     val instMap = HashMap<InstNode, List<JvmInst>>()
     val currentInstList = ArrayList<JvmInst>()
+    var maxStack = 0
+    var maxLocal = 0
 
     val mthVisit: MethodVisitor by lazy {
         clsTransformer.classWriter.visitMethod(mthNode.accFlags, mthNode.mthInfo.name, mthNode.descriptor, null, null)
@@ -133,8 +135,8 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         }
         mthVisit.visitCode()
         jvmInstManager.visitJvmInst()
-        // TODO: Calculate the number of slots and stack depth
-        mthVisit.visitMaxs(mthNode.regsCount, mthNode.regsCount)
+        // TODO: now set COMPUTE_MAX_STACK_AND_LOCAL flag
+        mthVisit.visitMaxs(maxStack, maxLocal)
         mthVisit.visitEnd()
     }
 

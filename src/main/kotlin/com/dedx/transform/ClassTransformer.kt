@@ -11,7 +11,7 @@ import java.io.File
 import java.io.FileOutputStream
 
 class ClassTransformer(private val clsNode: ClassNode, private val filePath: String = "") {
-    val classWriter = ClassWriter(0)
+    val classWriter = ClassWriter(1)
     lateinit var fieldVisitor: FieldVisitor
     lateinit var annotationVisitor: AnnotationVisitor
     lateinit var sourceFile: String
