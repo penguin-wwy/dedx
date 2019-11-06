@@ -97,6 +97,7 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
     private val shadowInsts = HashSet<Int>()
     private val tryCatchTable = TryCatchTable()
     val jumpMap by lazy { HashMap<JvmInst, ArrayList<JumpInst>>() }
+    val instStorage by lazy { LabelMap() }
 
     fun addTryCatchElement(startInst: JvmInst, endInst: JvmInst, catchInst: JvmInst, type: String?)
             = tryCatchTable.addElement(startInst, endInst, catchInst, type)
@@ -108,6 +109,7 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
         if (jvmInst is ShadowInst) {
             shadowInsts.add(jvmInstList.size)
         }
+        instStorage.storeInst(jvmInst.label, jvmInst)
         jvmInstList.add(jvmInst)
     }
 

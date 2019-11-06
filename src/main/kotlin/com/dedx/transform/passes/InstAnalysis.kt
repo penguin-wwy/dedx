@@ -11,7 +11,7 @@ object InstAnalysisPass : Pass {
         fl@ for (i in 0 until instTrans.instListSize()) {
             val jvmInst = instTrans.inst(i)
             if (jvmInst is JumpInst) {
-                val target = jvmInst.target.inst ?: continue@fl
+                val target = instTrans.instStorage.getInst(jvmInst.target) ?: continue@fl
                 if (!instTrans.jumpMap.containsKey(target)) {
                     instTrans.jumpMap[target] = ArrayList()
                 }

@@ -591,6 +591,12 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
                     else -> pushLiteralInst(jvmOpcodes.LDC, literal, SlotType.DOUBLE)
                 }
             }
+            SlotType.OBJECT -> {
+                when (literal) {
+                    0L -> pushSingleInst(jvmOpcodes.ACONST_NULL)
+                    else -> throw DecodeException("Const type error", offset)
+                }
+            }
             else -> {
                 throw DecodeException("Const type error", offset)
             }
