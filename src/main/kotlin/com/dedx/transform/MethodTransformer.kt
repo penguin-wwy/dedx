@@ -44,6 +44,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
     var newestReturn: SlotType? = null // mark last time invoke-kind's return result
     var prevLineNumber: Int = 0 // mark last time line number
     var jvmLabel: Label? = null
+    var jvmLabelUse: Int = 0 // mark same label used count
     var jvmLine: Int? = null
     var skipInst = 0 // mark instruction number which skip
     val instMap = HashMap<InstNode, List<JvmInst>>()
@@ -211,18 +212,19 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         }
     }
 
-    private fun getStartJvmLabel(): Label? {
-        if (jvmLabel != null) {
-            val label0: Label = jvmLabel!!
-            jvmLabel = null
-            return label0
+    private fun getStartJvmLabelInst() = if (jvmLabelUse == 0) {
+        jvmLabelUse++
+        when (jvmLabel) {
+            null -> LabelInst()
+            else -> LabelInst(jvmLabel as Label)
         }
-        return null
+    } else {
+        LabelInst()
     }
 
-    private fun getStartJvmLabelInst() = when (jvmLabel) {
-        null -> LabelInst()
-        else -> LabelInst(jvmLabel as Label)
+    private fun setStartJvmLabelInst(label: Label) {
+        jvmLabel = label
+        jvmLabelUse = 0
     }
 
     private fun getStartJvmLine(): Int? {
@@ -316,7 +318,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
     private fun normalProcess(inst: InstNode) {
 
         /*should use a safer way of assigning*/
-        jvmLabel = inst.getLabelOrPut().value
+        setStartJvmLabelInst(inst.getLabelOrPut().value)
         jvmLine = inst.getLineNumber()
 
         val frame = StackFrame.getFrameOrPut(inst.cursor).merge()
