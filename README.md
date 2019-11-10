@@ -22,9 +22,11 @@ And through the high version of the asm package, can produce a higher version of
 
 ~~Instruction Generation~~
 
---> Create class field writer
+~~Create class field writer~~
 
-Append stack frame map and line number table
+--> line number table
+
+--> Append stack frame map
 
 Optmization
 
