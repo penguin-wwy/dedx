@@ -7,6 +7,7 @@ object Configuration {
     var optLevel = 1
     lateinit var outDir: String
     lateinit var dexFiles: MutableList<String>
+    lateinit var classesList: MutableList<String>
 
     var logFile: String? = null
     var debug: Boolean = false

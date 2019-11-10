@@ -6,6 +6,7 @@ import com.dedx.transform.ClassTransformer
 import com.dedx.utils.DecodeException
 import org.apache.commons.cli.*
 import java.io.File
+import java.io.FileReader
 import java.lang.RuntimeException
 import java.util.*
 import java.util.logging.ConsoleHandler
@@ -36,6 +37,9 @@ fun createCmdTable(): Options {
             .desc("Specify optimization level").build()
     val logFile = Option.builder().longOpt("log").desc("Specify log file").hasArg().build()
     val debug = Option.builder("g").longOpt("debug").desc("Print debug info").build()
+    val classes = Option.builder().longOpt("classes")
+            .hasArg().argName("[class_name | @file]")
+            .desc("Specify classes which to load (default all)").build()
 
     val optTable = Options()
     optTable.addOption(help)
@@ -44,6 +48,7 @@ fun createCmdTable(): Options {
     optTable.addOption(optLevel)
     optTable.addOption(logFile)
     optTable.addOption(debug)
+    optTable.addOption(classes)
     return optTable
 }
 
@@ -77,11 +82,27 @@ fun configFromOptions(args: Array<String>, optTable: Options) {
         if (cmdTable.hasOption("g") || cmdTable.hasOption("debug")) {
             Configuration.debug = true
         }
+        if (cmdTable.hasOption("classes")) {
+            parseClasses(cmdTable.getOptionValue("classes"))
+        }
         Configuration.dexFiles = cmdTable.argList
         configLog()
     } catch (e: Exception) {
         System.err.println("Argument error: ${e.message}")
         exitProcess(1)
+    }
+}
+
+fun parseClasses(value: String) {
+    Configuration.classesList = ArrayList()
+    if (value.startsWith("@")) {
+        FileReader(value.substring(1)).useLines {
+            Configuration.classesList.addAll(it)
+        }
+    } else {
+        value.split(';').forEach {
+            Configuration.classesList.add(it)
+        }
     }
 }
 
