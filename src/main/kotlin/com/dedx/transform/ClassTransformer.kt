@@ -2,6 +2,8 @@ package com.dedx.transform
 
 import com.android.dx.rop.code.AccessFlags
 import com.dedx.dex.struct.*
+import com.dedx.tools.Configuration
+import com.dedx.tools.EmptyConfiguration
 import com.google.common.flogger.FluentLogger
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassWriter
@@ -10,7 +12,9 @@ import org.objectweb.asm.Opcodes.V1_8
 import java.io.File
 import java.io.FileOutputStream
 
-class ClassTransformer(private val clsNode: ClassNode, private val filePath: String = "") {
+class ClassTransformer(private val clsNode: ClassNode,
+                       val config: Configuration = EmptyConfiguration,
+                       private val filePath: String = "") {
     val classWriter = ClassWriter(1)
     lateinit var fieldVisitor: FieldVisitor
     lateinit var annotationVisitor: AnnotationVisitor
@@ -20,7 +24,7 @@ class ClassTransformer(private val clsNode: ClassNode, private val filePath: Str
         private val logger = FluentLogger.forEnclosingClass()
     }
 
-    fun visitClass(): ClassTransformer {
+    fun visitClass() = apply {
         classWriter.visit(V1_8,
                 if (!clsNode.isInterface()) clsNode.accFlags or AccessFlags.ACC_SUPER else clsNode.accFlags,
                 clsNode.clsInfo.fullName.replace('.', '/'),
@@ -35,7 +39,6 @@ class ClassTransformer(private val clsNode: ClassNode, private val filePath: Str
         visitMethod()
         classWriter.visitSource(sourceFile, null)
         classWriter.visitEnd()
-        return this
     }
 
     private fun visitMethod() {

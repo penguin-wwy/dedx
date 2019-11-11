@@ -99,7 +99,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         if (mthNode.debugInfoOffset != DexNode.NO_INDEX) {
             MethodDebugInfoVisitor.visitMethod(mthNode)
         }
-        if (Configuration.optLevel >= Configuration.Optimized) {
+        if (clsTransformer.config.optLevel >= Configuration.Optimized) {
             visitOptimization()
         } else {
             visitNormal()
@@ -135,7 +135,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             return
         }
         mthVisit.visitCode()
-        jvmInstManager.visitJvmInst()
+        jvmInstManager.visitJvmInst(clsTransformer.config)
         // TODO: now set COMPUTE_MAX_STACK_AND_LOCAL flag
         mthVisit.visitMaxs(maxStack, maxLocal)
         mthVisit.visitEnd()
