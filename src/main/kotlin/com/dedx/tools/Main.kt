@@ -8,7 +8,6 @@ import org.apache.commons.cli.*
 import java.io.File
 import java.io.FileReader
 import java.lang.RuntimeException
-import java.util.*
 import java.util.logging.ConsoleHandler
 import java.util.logging.FileHandler
 import java.util.logging.Level
@@ -17,9 +16,9 @@ import kotlin.system.exitProcess
 
 fun configLog() {
     val root = Logger.getLogger("")
-    root.level = if (Configuration.debug) Level.FINEST else Level.INFO
+    root.level = if (CmdConfiguration.debug) Level.FINEST else Level.INFO
     root.handlers.forEach { root.removeHandler(it) }
-    root.addHandler(Configuration.logFile?.let {
+    root.addHandler(CmdConfiguration.logFile?.let {
         FileHandler(it)
     } ?: ConsoleHandler())
 }
@@ -64,10 +63,10 @@ fun configFromOptions(args: Array<String>, optTable: Options) {
             exitProcess(0)
         }
         if (cmdTable.hasOption("o") || cmdTable.hasOption("output")) {
-            Configuration.outDir = cmdTable.getOptionValue("o") ?: cmdTable.getOptionValue("output")
+            CmdConfiguration.outDir = cmdTable.getOptionValue("o") ?: cmdTable.getOptionValue("output")
         }
         if (cmdTable.hasOption("opt")) {
-            Configuration.optLevel = when (cmdTable.getOptionValue("opt")) {
+            CmdConfiguration.optLevel = when (cmdTable.getOptionValue("opt")) {
                 "fast" -> Configuration.NormalFast
                 "normal" -> Configuration.NormalOpt
                 "optimize" -> Configuration.Optimized
@@ -77,15 +76,15 @@ fun configFromOptions(args: Array<String>, optTable: Options) {
             }
         }
         if (cmdTable.hasOption("log")) {
-            Configuration.logFile = cmdTable.getOptionValue("log")
+            CmdConfiguration.logFile = cmdTable.getOptionValue("log")
         }
         if (cmdTable.hasOption("g") || cmdTable.hasOption("debug")) {
-            Configuration.debug = true
+            CmdConfiguration.debug = true
         }
         if (cmdTable.hasOption("classes")) {
             parseClasses(cmdTable.getOptionValue("classes"))
         }
-        Configuration.dexFiles = cmdTable.argList
+        CmdConfiguration.dexFiles = cmdTable.argList
         configLog()
     } catch (e: Exception) {
         System.err.println("Argument error: ${e.message}")
@@ -94,31 +93,31 @@ fun configFromOptions(args: Array<String>, optTable: Options) {
 }
 
 fun parseClasses(value: String) {
-    Configuration.classesList = ArrayList()
     if (value.startsWith("@")) {
         FileReader(value.substring(1)).useLines {
-            Configuration.classesList.addAll(it)
+            CmdConfiguration.classesList.addAll(it)
         }
     } else {
         value.split(';').forEach {
-            Configuration.classesList.add(it)
+            CmdConfiguration.classesList.add(it)
         }
     }
 }
 
 fun compileClass(classNode: ClassNode) {
-    val path = Configuration.outDir + File.separator + classNode.clsInfo.className() + ".class"
+    val path = CmdConfiguration.outDir + File.separator + classNode.clsInfo.className() + ".class"
     if (!File(path).parentFile.exists()) {
         File(path).parentFile.mkdirs()
     }
-    val transformer = ClassTransformer(classNode, path)
+    val transformer = ClassTransformer(classNode, CmdConfiguration, path)
     transformer.visitClass().dump()
 }
 
 fun runMain(): Int {
     try {
-        for (dexFile in Configuration.dexFiles) {
-            val dexNode = DexNode.create(dexFile) ?: throw DecodeException("Create dex node failed: $dexFile")
+        for (dexFile in CmdConfiguration.dexFiles) {
+            val dexNode = DexNode.create(dexFile, CmdConfiguration)
+                    ?: throw DecodeException("Create dex node failed: $dexFile")
             dexNode.loadClass()
             for (classNode in dexNode.classes) {
                 compileClass(classNode)

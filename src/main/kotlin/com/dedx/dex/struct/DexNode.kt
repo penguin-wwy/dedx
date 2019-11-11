@@ -3,40 +3,45 @@ package com.dedx.dex.struct
 import com.android.dex.ClassData
 import com.android.dex.Dex
 import com.dedx.dex.struct.type.TypeBox
+import com.dedx.tools.Configuration
+import com.dedx.tools.EmptyConfiguration
+import com.google.common.flogger.FluentLogger
 import java.io.File
 
-interface DexNodeFactory<T> {
-    fun create(filePath: String): T?
-    fun create(bytes: ByteArray): T?
-}
-
-class DexNode private constructor(val dex: Dex) {
+class DexNode private constructor(val dex: Dex, private val config: Configuration) {
 
     val classes = ArrayList<ClassNode>()
     val clsMap = HashMap<ClassInfo, ClassNode>()
 
-    companion object : DexNodeFactory<DexNode> {
+    companion object {
+        private final val logger = FluentLogger.forEnclosingClass()
         val NO_INDEX: Int = -1
-        @JvmStatic override fun create(filePath: String): DexNode? {
+        @JvmStatic fun create(filePath: String, config: Configuration = EmptyConfiguration): DexNode? {
             val dexFile = File(filePath)
             if (dexFile.exists() && dexFile.isFile()) {
                 val dex = Dex(dexFile)
-                return DexNode(dex)
+                return DexNode(dex, config)
             }
             return null
         }
 
-        @JvmStatic override fun create(bytes: ByteArray) = DexNode(Dex(bytes))
+        @JvmStatic fun create(bytes: ByteArray, config: Configuration = EmptyConfiguration)
+                = DexNode(Dex(bytes), config)
     }
 
     fun loadClass() {
         InfoStorage.clear()
-        for (cls in dex.classDefs()) {
+        for (clsDef in dex.classDefs()) {
             var clsData: ClassData? = null
-            if (cls.classDataOffset != 0) {
-                clsData = dex.readClassData(cls)
+            if (clsDef.classDataOffset != 0) {
+                clsData = dex.readClassData(clsDef)
             }
-            val clsNode = ClassNode.create(this, cls, clsData).load()
+            val clsNode = ClassNode.ClassNodeFactory(config)
+                    .setDexNode(this)
+                    .setClassDef(clsDef)
+                    .setClassData(clsData)
+                    .create()
+                    ?.load() ?: continue
             classes.add(clsNode)
             clsMap[clsNode.clsInfo] = clsNode
         }

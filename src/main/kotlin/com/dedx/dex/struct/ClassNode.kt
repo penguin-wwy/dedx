@@ -5,6 +5,7 @@ import com.android.dex.ClassDef
 import com.dedx.dex.parser.AnnotationsParser
 import com.dedx.dex.parser.StaticValuesParser
 import com.dedx.dex.struct.type.ObjectType
+import com.dedx.tools.Configuration
 import com.dedx.utils.DecodeException
 import com.google.common.flogger.FluentLogger
 import java.lang.Exception
@@ -12,16 +13,18 @@ import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
-class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsData: ClassData?): AccessInfo, AttrNode {
+class ClassNode private constructor(val parent: DexNode,
+                                    private val clsDef: ClassDef,
+                                    val clsInfo: ClassInfo,
+                                    clsData: ClassData?): AccessInfo, AttrNode {
 
     override val attributes: MutableMap<AttrKey, AttrValue> = HashMap()
-    override val accFlags: Int = cls.accessFlags
-    val clsInfo: ClassInfo = ClassInfo.fromDex(parent, cls.typeIndex)
-    val interfaces: Array<ObjectType> = Array(cls.interfaces.size) {
-        i -> parent.getType(cls.interfaces[i].toInt()).getAsObjectType() ?: throw DecodeException("Interface type error.")
+    override val accFlags: Int = clsDef.accessFlags
+    val interfaces: Array<ObjectType> = Array(clsDef.interfaces.size) {
+        i -> parent.getType(clsDef.interfaces[i].toInt()).getAsObjectType() ?: throw DecodeException("Interface type error.")
     }
     val methods: List<MethodNode> = addMethods(this, clsData)
-    val fields: List<FieldNode> = addFields(this, cls, clsData)
+    val fields: List<FieldNode> = addFields(this, clsDef, clsData)
 
     private val mthCache: MutableMap<MethodInfo, MethodNode> = HashMap(methods.size)
     private val fieldCache: MutableMap<FieldInfo, FieldNode> = HashMap(fields.size)
@@ -34,7 +37,7 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
             fieldCache[field.fieldInfo] = field
         }
 
-        val offset = cls.annotationsOffset
+        val offset = clsDef.annotationsOffset
         if (offset != 0) {
             try {
                 AnnotationsParser(parent, this).parse(offset)
@@ -44,7 +47,35 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
         }
     }
 
-    companion object : ClassNodeFactory<ClassNode> {
+    class ClassNodeFactory(private val configuration: Configuration) {
+
+        private lateinit var parent: DexNode
+        private lateinit var clsDef: ClassDef
+        private var clsData: ClassData? = null
+
+        fun setDexNode(parent: DexNode) = apply {
+            this.parent = parent
+        }
+
+        fun setClassDef(cls: ClassDef) = apply {
+            clsDef = cls
+        }
+
+        fun setClassData(clsData: ClassData?) = apply {
+            this.clsData = clsData
+        }
+
+        fun create(): ClassNode? {
+            val clsInfo: ClassInfo = ClassInfo.fromDex(parent, clsDef.typeIndex)
+            if (configuration.classesList.isNotEmpty() && configuration.classesList.contains(clsInfo.fullName)) {
+                return null
+            }
+            return create(parent, clsDef, clsInfo, clsData)
+        }
+    }
+
+
+    companion object {
         private val logger = FluentLogger.forEnclosingClass()
 
         fun addMethods(parent: ClassNode, clsData: ClassData?): List<MethodNode> {
@@ -93,7 +124,8 @@ class ClassNode private constructor(val parent: DexNode, val cls: ClassDef, clsD
             ConstStorage.processConstFields(parent, staticFields)
         }
 
-        override fun create(parent: DexNode, cls: ClassDef, clsData: ClassData?) = ClassNode(parent, cls, clsData)
+        private fun create(parent: DexNode, clsDef: ClassDef, clsInfo: ClassInfo, clsData: ClassData?)
+                = ClassNode(parent, clsDef, clsInfo, clsData)
     }
 
     fun load() = apply { methods.forEach { it.load() } }

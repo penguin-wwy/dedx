@@ -2,6 +2,7 @@ package com.dedx.test
 
 import com.dedx.dex.struct.DexNode
 import com.dedx.transform.ClassTransformer
+import com.dedx.tools.Configuration
 
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -10,13 +11,14 @@ import java.util.zip.ZipEntry
 
 String compileDexOneClass(String tag, String dexFile) throws Exception {
     println "Compile: $dexFile"
-    def dexNode = DexNode.create(dexFile)
+    def config = new Configuration()
+    def dexNode = DexNode.create(dexFile, config)
     println 'Load class...'
     dexNode.loadClass()
     def baseClass = dexNode.getClass(tag)
     def filePath = dexFile.replace(".dex", ".class")
     println "Dump to: $filePath"
-    def compiler = new ClassTransformer(baseClass, filePath)
+    def compiler = new ClassTransformer(baseClass, config, filePath)
     return compiler.visitClass().dump()
 }
 
@@ -54,12 +56,13 @@ String compileDexMultipClass(String tag, String dexFile) throws Exception {
     println "Compile: $dexFile"
     def parent = dexFile.replace(".dex", "")
     new File(parent).mkdirs()
-    def dexNode = DexNode.create(dexFile)
+    def config = new Configuration()
+    def dexNode = DexNode.create(dexFile, config)
     dexNode.loadClass()
     def files = new ArrayList<String>()
     for (clazz in dexNode.classes) {
         def classPath = createClassPath(parent, clazz.clsInfo.className())
-        def compiler = new ClassTransformer(clazz, classPath)
+        def compiler = new ClassTransformer(clazz, config, classPath)
         files.add(compiler.visitClass().dump())
     }
     return createJar(parent, files)
