@@ -56,10 +56,6 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         clsTransformer.classWriter.visitMethod(mthNode.accFlags, mthNode.mthInfo.name, mthNode.descriptor, null, null)
     }
 
-    init {
-        clsTransformer.sourceFile = mthNode.getSourceFile() ?: ""
-    }
-
     fun visitMethodAnnotation() = apply {
         val values = mthNode.attributes[AttrKey.ANNOTATION]?.getAsAttrValueList() ?: return@apply
         for (value in values) {
@@ -97,7 +93,11 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             return
         }
         if (mthNode.debugInfoOffset != DexNode.NO_INDEX) {
-            MethodDebugInfoVisitor.visitMethod(mthNode)
+            try {
+                MethodDebugInfoVisitor.visitMethod(mthNode)
+            } catch (e: Exception) {
+                logger.atWarning().withCause(e).log(logInfo())
+            }
         }
         if (clsTransformer.config.optLevel >= Configuration.Optimized) {
             visitOptimization()
@@ -130,12 +130,18 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             }
             visitTryCatchBlock()
         } catch (e: Exception) {
-            logger.atSevere().withCause(e).log()
+            logger.atSevere().withCause(e).log(logInfo())
             InstTransformer.throwErrorMethod(mthVisit)
             return
         }
         mthVisit.visitCode()
-        jvmInstManager.visitJvmInst(clsTransformer.config)
+        try {
+            jvmInstManager.visitJvmInst(clsTransformer.config)
+        } catch (e: Exception) {
+            logger.atSevere().withCause(e).log(logInfo())
+            InstTransformer.throwErrorMethod(mthVisit)
+            return
+        }
         // TODO: now set COMPUTE_MAX_STACK_AND_LOCAL flag
         mthVisit.visitMaxs(maxStack, maxLocal)
         mthVisit.visitEnd()
@@ -972,7 +978,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
 
     private fun visitMove(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
         val regB = dalvikInst.regB()
-        val slotType = frame.getSlot(regB) ?: throw DecodeException("Empty type in slot [$regB]")
+        val slotType = frame.getSlot(regB) ?: throw DecodeException("Empty type in slot [$regB] offset[$offset]")
         visitStore(visitLoad(regB, slotType, offset), dalvikInst.regA(), frame)
     }
 
@@ -1239,4 +1245,6 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         }
         pushMultiANewArrayInsn("I", dalvikInst.registerCount)
     }
+
+    private fun logInfo() = "${mthNode.mthInfo}"
 }

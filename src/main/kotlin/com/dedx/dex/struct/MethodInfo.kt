@@ -48,4 +48,8 @@ class MethodInfo private constructor(val name: String,
         }
         return declClass == other.declClass && name == other.name && retType == other.retType && args == other.args
     }
+
+    override fun toString(): String {
+        return "$declClass $name ${parseSignature()}"
+    }
 }

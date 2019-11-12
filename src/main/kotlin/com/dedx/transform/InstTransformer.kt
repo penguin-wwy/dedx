@@ -138,7 +138,7 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
     fun imInstList() = jvmInstList as List<JvmInst>
 
     fun visitJvmInst(configuration: Configuration) {
-        eliminateShadowInst()
+//        eliminateShadowInst()
         if (configuration.optLevel == Configuration.NormalOpt) {
             InstAnalysisPass.runOnFunction(this)
             RemoveNOPPass.runOnFunction(this)

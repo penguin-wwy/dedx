@@ -161,6 +161,8 @@ class ClassNode private constructor(val parent: DexNode,
 
     fun hasSuperClass() = clsInfo.parentClass != null
 
+    fun getSourceFile() = parent.getString(clsDef.sourceFileIndex)
+
     override fun equals(other: Any?): Boolean {
         if (other == null || other !is ClassNode) {
             return false

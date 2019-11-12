@@ -90,7 +90,7 @@ open class EncValueParser(val dex: DexNode, val section: Dex.Section) {
 
     private fun parseUnsignedInt(byteCount: Int) = parseNumber(byteCount, false, 0).toInt()
 
-    private fun readByte(): Int = section.readByte().toInt()
+    private fun readByte(): Int = section.readByte().toUByte().toInt()
 }
 
 class StaticValuesParser(dex: DexNode, section: Dex.Section): EncValueParser(dex, section) {

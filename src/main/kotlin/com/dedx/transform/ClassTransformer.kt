@@ -11,6 +11,7 @@ import org.objectweb.asm.FieldVisitor
 import org.objectweb.asm.Opcodes.V1_8
 import java.io.File
 import java.io.FileOutputStream
+import java.lang.IllegalArgumentException
 
 class ClassTransformer(private val clsNode: ClassNode,
                        val config: Configuration = EmptyConfiguration,
@@ -18,7 +19,7 @@ class ClassTransformer(private val clsNode: ClassNode,
     val classWriter = ClassWriter(1)
     lateinit var fieldVisitor: FieldVisitor
     lateinit var annotationVisitor: AnnotationVisitor
-    lateinit var sourceFile: String
+    private val sourceFile = clsNode.getSourceFile()
 
     companion object {
         private val logger = FluentLogger.forEnclosingClass()
@@ -72,11 +73,17 @@ class ClassTransformer(private val clsNode: ClassNode,
             val annoClazz = value.getAsAnnotation() ?: continue
             annotationVisitor = classWriter.visitAnnotation(annoClazz.type.descriptor(), annoClazz.hasVisibility())
             for (annotationValue in annoClazz.values) {
-                annotationVisitor.visit(annotationValue.key, annotationValue.value.value)
+                try {
+                    annotationVisitor.visit(annotationValue.key, annotationValue.value.value)
+                } catch (e: IllegalArgumentException) {
+                    logger.atWarning().withCause(e).log(logInfo())
+                }
             }
             annotationVisitor.visitEnd()
         }
     }
+
+    private fun logInfo() = "${clsNode.clsInfo}"
 
     fun dump(): String {
         FileOutputStream(File(filePath)).use { w ->
