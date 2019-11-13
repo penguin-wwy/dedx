@@ -17,7 +17,7 @@ class AnnotationsParser(val dex: DexNode, val cls: ClassNode) {
             val parser = EncValueParser(dex, section)
             var visibility: Visibility? = null
             if (readVisibility) {
-                val v = section.readByte()
+                val v = section.readByte().toUByte()
                 visibility = VISIBILITIES[v.toInt()]
             }
             val typeIndex = section.readUleb128()

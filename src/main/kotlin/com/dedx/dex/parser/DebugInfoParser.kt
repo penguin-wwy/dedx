@@ -62,7 +62,7 @@ class DebugInfoParser(val mth: MethodNode, val insnList: Array<InstNode?>, debug
         addrChange(-1, 1, line)
         setLine(addr, line)
 
-        var c = section.readByte().toInt() and 0xFF
+        var c = section.readByte().toUByte().toInt() and 0xFF
         while (c != DBG_END_SEQUENCE) {
             when (c) {
                 DBG_ADVANCE_PC -> {
@@ -71,7 +71,7 @@ class DebugInfoParser(val mth: MethodNode, val insnList: Array<InstNode?>, debug
                     setLine(addr, line)
                 }
                 DBG_ADVANCE_LINE -> {
-                    line += section.readUleb128()
+                    line += section.readSleb128()
                 }
                 DBG_START_LOCAL -> {
                     val regNum = section.readUleb128()
@@ -123,7 +123,7 @@ class DebugInfoParser(val mth: MethodNode, val insnList: Array<InstNode?>, debug
                     }
                 }
             }
-            c = section.readByte().toInt() and 0xFF
+            c = section.readByte().toUByte().toInt() and 0xFF
         }
 
         if (varInfoFound) {

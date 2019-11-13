@@ -1,6 +1,7 @@
 package com.dedx.dex.pass
 
 import com.dedx.dex.struct.DexNode
+import com.dedx.tools.EmptyConfiguration
 import com.dedx.transform.ClassTransformer
 import com.dedx.transform.MethodTransformer
 import org.junit.Assert.*
@@ -16,7 +17,7 @@ class CFGBuildPassTest {
         assertFalse(testClazz == null)
         val methodNode = testClazz?.searchMethodByProto("testOne", "(Ljava/lang/String;I)Ljava/lang/String;")
         assertTrue(methodNode != null)
-        val transformer = MethodTransformer(methodNode!!, ClassTransformer(testClazz!!, ""))
+        val transformer = MethodTransformer(methodNode!!, ClassTransformer(testClazz!!, EmptyConfiguration))
         CFGBuildPass.visit(transformer)
         assertFalse(transformer.blockMap.isEmpty())
         for (entry in transformer.blockMap) {
