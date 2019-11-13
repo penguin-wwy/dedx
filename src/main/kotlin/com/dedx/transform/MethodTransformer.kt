@@ -978,8 +978,13 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
 
     private fun visitMove(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
         val regB = dalvikInst.regB()
-        val slotType = frame.getSlot(regB) ?: throw DecodeException("Empty type in slot [$regB] offset[$offset]")
-        visitStore(visitLoad(regB, slotType, offset), dalvikInst.regA(), frame)
+        var slotType = SlotType.INT
+        if (frame.isConstant(regB)) {
+            visitLoad(regB, SlotType.INT, offset)
+        } else {
+            slotType = visitLoad(regB, frame.getSlot(regB) ?: throw DecodeException("Empty type in slot [$regB] offset[$offset]"), offset)
+        }
+        visitStore(slotType, dalvikInst.regA(), frame)
     }
 
     private fun visitThrow(dalvikInst: OneRegisterDecodedInstruction, offset: Int) {
