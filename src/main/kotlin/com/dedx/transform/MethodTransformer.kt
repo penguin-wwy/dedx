@@ -85,12 +85,12 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         }
     }
 
-    fun visitMethodBody() {
+    fun visitMethodBody(): Boolean {
         if (mthNode.noCode) {
             if (mthNode.isAbstract()) {
                 mthVisit.visitEnd()
             }
-            return
+            return true
         }
         if (mthNode.debugInfoOffset != DexNode.NO_INDEX) {
             try {
@@ -99,14 +99,14 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
                 logger.atWarning().withCause(e).log(logInfo())
             }
         }
-        if (clsTransformer.config.optLevel >= Configuration.Optimized) {
-            visitOptimization()
-        } else {
-            visitNormal()
-        }
+//        if (clsTransformer.config.optLevel >= Configuration.Optimized) {
+//            visitOptimization()
+//        } else {
+            return visitNormal()
+//        }
     }
 
-    private fun visitNormal() {
+    private fun visitNormal(): Boolean {
         try {
             StackFrame.initInstFrame(mthNode)
             val entryFrame = StackFrame.getFrameOrPut(0)
@@ -132,7 +132,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         } catch (e: Exception) {
             logger.atSevere().withCause(e).log(logInfo())
             InstTransformer.throwErrorMethod(mthVisit)
-            return
+            return false
         }
         mthVisit.visitCode()
         try {
@@ -140,18 +140,20 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         } catch (e: Exception) {
             logger.atSevere().withCause(e).log(logInfo())
             InstTransformer.throwErrorMethod(mthVisit)
-            return
+            return false
         }
         // TODO: now set COMPUTE_MAX_STACK_AND_LOCAL flag
         mthVisit.visitMaxs(maxStack, maxLocal)
         mthVisit.visitEnd()
+        return true
     }
 
-    private fun visitOptimization() {
+    private fun visitOptimization(): Boolean {
         CFGBuildPass.visit(this)
         dfInfo = DataFlowAnalysisPass.visit(this)
         DataFlowAnalysisPass.livenessAnalyzer(dfInfo!!)
         // TODO tranform by optimize
+        return false
     }
 
     private fun visitTryCatchBlock() {

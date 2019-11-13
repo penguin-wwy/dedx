@@ -21,6 +21,9 @@ class ClassTransformer(private val clsNode: ClassNode,
     lateinit var annotationVisitor: AnnotationVisitor
     private val sourceFile = clsNode.getSourceFile()
 
+    private var success = 0
+    private var failed = 0
+
     companion object {
         private val logger = FluentLogger.forEnclosingClass()
     }
@@ -40,10 +43,17 @@ class ClassTransformer(private val clsNode: ClassNode,
         visitMethod()
         classWriter.visitSource(sourceFile, null)
         classWriter.visitEnd()
+        logger.atInfo().log("[${clsNode.clsInfo} end] Success/Failed $success/$failed")
     }
 
     private fun visitMethod() {
-        clsNode.methods.forEach { MethodTransformer(it, this).visitMethodAnnotation().visitMethodBody() }
+        clsNode.methods.forEach {
+            if (MethodTransformer(it, this).visitMethodAnnotation().visitMethodBody()) {
+                success++
+            } else {
+                failed++
+            }
+        }
     }
 
     private fun visitField() {
