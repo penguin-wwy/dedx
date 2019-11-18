@@ -67,7 +67,12 @@ class ClassNode private constructor(val parent: DexNode,
 
         fun create(): ClassNode? {
             val clsInfo: ClassInfo = ClassInfo.fromDex(parent, clsDef.typeIndex)
-            if (configuration.classesList.isNotEmpty() && configuration.classesList.contains(clsInfo.fullName)) {
+            if (configuration.blackClasses.isNotEmpty() && configuration.blackClasses.find { clsInfo.fullName.startsWith(it) } != null) {
+                logger.atInfo().log("Class skip by hit black classes list [$clsInfo]")
+                return null
+            }
+            if (configuration.classesList.isNotEmpty() && configuration.classesList.find { clsInfo.fullName.startsWith(it) } == null) {
+                logger.atInfo().log("Class skip by no hit classes list [$clsInfo]")
                 return null
             }
             return create(parent, clsDef, clsInfo, clsData)

@@ -3,6 +3,7 @@ package com.dedx.tools
 open class Configuration {
     var optLevel = NormalOpt
     val classesList: MutableList<String> = ArrayList()
+    val blackClasses: MutableList<String> = ArrayList()
 
     lateinit var outDir: String
     lateinit var dexFiles: MutableList<String>

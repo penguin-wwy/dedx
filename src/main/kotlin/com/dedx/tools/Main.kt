@@ -39,6 +39,9 @@ fun createCmdTable(): Options {
     val classes = Option.builder().longOpt("classes")
             .hasArg().argName("[class_name | @file]")
             .desc("Specify classes which to load (default all)").build()
+    val blackList = Option.builder().longOpt("black-classes")
+            .hasArg().argName("[class_name | @file]")
+            .desc("Specify classes which not to load (default none)").build()
 
     val optTable = Options()
     optTable.addOption(help)
@@ -48,6 +51,7 @@ fun createCmdTable(): Options {
     optTable.addOption(logFile)
     optTable.addOption(debug)
     optTable.addOption(classes)
+    optTable.addOption(blackList)
     return optTable
 }
 
@@ -82,7 +86,10 @@ fun configFromOptions(args: Array<String>, optTable: Options) {
             CmdConfiguration.debug = true
         }
         if (cmdTable.hasOption("classes")) {
-            parseClasses(cmdTable.getOptionValue("classes"))
+            parseClasses(CmdConfiguration.classesList, cmdTable.getOptionValue("classes"))
+        }
+        if (cmdTable.hasOption("black-classes")) {
+            parseClasses(CmdConfiguration.blackClasses, cmdTable.getOptionValue("black-classes"))
         }
         CmdConfiguration.dexFiles = cmdTable.argList
         configLog()
@@ -92,14 +99,14 @@ fun configFromOptions(args: Array<String>, optTable: Options) {
     }
 }
 
-fun parseClasses(value: String) {
+fun parseClasses(classesList: MutableList<String>, value: String) {
     if (value.startsWith("@")) {
         FileReader(value.substring(1)).useLines {
-            CmdConfiguration.classesList.addAll(it)
+            classesList.addAll(it)
         }
     } else {
         value.split(';').forEach {
-            CmdConfiguration.classesList.add(it)
+            classesList.add(it)
         }
     }
 }
