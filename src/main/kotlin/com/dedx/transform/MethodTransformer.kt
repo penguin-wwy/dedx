@@ -552,7 +552,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             val frame = StackFrame.getFrameOrExcept(offset)
             val literal = frame.getLiteralExpect(slot)
             if (frame.isConstantPoolLiteral(slot)) {
-                visitPushOrLdc(literal, slotType, offset, slot)
+                visitPushOrLdc(literal, slotType, offset)
             }
             if (frame.isStringIndex(slot)) {
                 pushConstantInst(jvmOpcodes.LDC, literal.toInt())
@@ -565,7 +565,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         }
     }
 
-    private fun visitPushOrLdc(literal: Long, slotType: SlotType, offset: Int, slot: Int = -1) {
+    private fun visitPushOrLdc(literal: Long, slotType: SlotType, offset: Int) {
         when (slotType) {
             SlotType.BOOLEAN -> pushSingleInst(jvmOpcodes.ICONST_0 + literal.toInt())
             SlotType.BYTE -> pushIntInst(jvmOpcodes.BIPUSH, literal.toInt())
@@ -604,7 +604,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             SlotType.OBJECT -> {
                 when (literal) {
                     0L -> pushSingleInst(jvmOpcodes.ACONST_NULL)
-                    else -> pushSlotInst(jvmOpcodes.ALOAD, if (slot >= 0) slot else throw DecodeException("Const object error"))
+                    else -> throw DecodeException("Const object error")
                 }
             }
             else -> {
@@ -1060,7 +1060,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             skipInst ++
         }
         val mthInfo = MethodInfo.fromDex(dexNode, nextInst.instruction.index)
-        StackFrame.getFrameOrExcept(nextInst.cursor).merge()
+        val nextFrame = StackFrame.getFrameOrExcept(nextInst.cursor).merge()
         // constructor ignore this pointer
         for(i in 1 until nextInst.instruction.registerCount) {
             when (i) {
@@ -1072,7 +1072,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             }
         }
         pushInvokeInst(InvokeType.INVOKESPECIAL, nextInst.instruction.index)
-        visitStore(SlotType.OBJECT, dalvikInst.regA(), frame)
+        visitStore(SlotType.OBJECT, dalvikInst.regA(), nextFrame)
     }
 
     private fun visitArrayLength(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
