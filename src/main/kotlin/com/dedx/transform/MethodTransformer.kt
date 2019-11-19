@@ -552,7 +552,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             val frame = StackFrame.getFrameOrExcept(offset)
             val literal = frame.getLiteralExpect(slot)
             if (frame.isConstantPoolLiteral(slot)) {
-                visitPushOrLdc(literal, slotType, offset)
+                visitPushOrLdc(literal, slotType, offset, slot)
             }
             if (frame.isStringIndex(slot)) {
                 pushConstantInst(jvmOpcodes.LDC, literal.toInt())
@@ -565,7 +565,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         }
     }
 
-    private fun visitPushOrLdc(literal: Long, slotType: SlotType, offset: Int) {
+    private fun visitPushOrLdc(literal: Long, slotType: SlotType, offset: Int, slot: Int = -1) {
         when (slotType) {
             SlotType.BOOLEAN -> pushSingleInst(jvmOpcodes.ICONST_0 + literal.toInt())
             SlotType.BYTE -> pushIntInst(jvmOpcodes.BIPUSH, literal.toInt())
@@ -604,7 +604,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             SlotType.OBJECT -> {
                 when (literal) {
                     0L -> pushSingleInst(jvmOpcodes.ACONST_NULL)
-                    else -> throw DecodeException("Const type error", offset)
+                    else -> pushSlotInst(jvmOpcodes.ALOAD, if (slot >= 0) slot else throw DecodeException("Const object error"))
                 }
             }
             else -> {
