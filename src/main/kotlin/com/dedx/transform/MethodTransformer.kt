@@ -636,6 +636,10 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
                 pushSlotInst(jvmOpcodes.ASTORE, slot)
                 frame.setSlot(slot, type)
             }
+            SlotType.ARRAY -> {
+                pushSlotInst(jvmOpcodes.ASTORE, slot)
+                frame.setSlotArray(slot, type)
+            }
             else -> {
                 // TODO
             }
@@ -662,11 +666,11 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             SlotType.DOUBLE -> {
                 pushSingleInst(jvmOpcodes.DSTORE)
             }
-            SlotType.OBJECT -> {
+            SlotType.OBJECT, SlotType.ARRAY -> {
                 pushSingleInst(jvmOpcodes.ARETURN)
             }
             else -> {
-
+                throw DecodeException("return unknow type: $type [$offset]")
             }
         }
     }
