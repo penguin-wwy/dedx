@@ -30,7 +30,7 @@ class SymbolInfo private constructor(private val symbolIdentifier: Int) {
     fun getType(dex: DexNode) = if (this::type.isInitialized && symbolIdentifier == SymbolTypeIndex)
         dex.getType(number.toInt()) else throw DecodeException("This symbol not class type")
 
-    fun getTyoeOrNull() = if (this::type.isInitialized && symbolIdentifier == SymbolType) type else null
+    fun getTypeOrNull() = if (this::type.isInitialized && symbolIdentifier == SymbolType) type else null
 
     fun getTypeOrNull(dex: DexNode) = if (this::type.isInitialized && symbolIdentifier == SymbolTypeIndex)
         dex.getType(number.toInt()) else null
@@ -50,4 +50,23 @@ class SymbolInfo private constructor(private val symbolIdentifier: Int) {
     fun getNumber() = if (symbolIdentifier == NumberLiteral && number > -1) number else throw DecodeException("This symbol not number literal")
 
     fun getNumberOrNull() = if (symbolIdentifier == NumberLiteral && number > -1) number else null
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null) {
+            return false
+        }
+        if (other !is SymbolInfo) {
+            return false
+        }
+        if (symbolIdentifier != other.symbolIdentifier) {
+            return false
+        }
+        if (this::type.isInitialized && other::type.isInitialized && type.equals(other.type)) {
+            return true
+        }
+        if (number != -1L && other.number != -1L && number == other.number) {
+            return true
+        }
+        return false
+    }
 }

@@ -53,10 +53,6 @@ enum class SlotType {
 }
 
 class StackFrame(val cursor: Int) {
-//    val reg2slot = HashMap<Int, Int?>()
-//    val slot2reg = HashMap<Int, Int?>()
-//    val preFrames = ArrayList<StackFrame>()
-//    val sucFrames = ArrayList<StackFrame>()
 
     companion object {
         private val InstFrames = HashMap<Int, StackFrame>()
@@ -66,16 +62,6 @@ class StackFrame(val cursor: Int) {
         }
 
         fun getFrameOrExcept(index: Int) = InstFrames.get(index) ?: throw DecodeException("No frame in $index")
-
-        fun checkType(type: SlotType, offset: Int, vararg regs: Int) {
-            val frame = InstFrames[offset] ?: throw DecodeException("Empty stack frame for inst[$offset]")
-            for (reg in regs) {
-                val regType = frame.slot2type[reg] ?: throw DecodeException("Empty slot[$reg] for inst[$offset]")
-                if ((type > SlotType.INT && type != regType) || (type <= SlotType.INT && regType > SlotType.INT)) {
-                    throw TypeConfliction("Type confliction when type check: [$reg]")
-                }
-            }
-        }
 
         fun initInstFrame(mthNode: MethodNode) {
             InstFrames.clear()
@@ -98,16 +84,11 @@ class StackFrame(val cursor: Int) {
         }
     }
 
-    val slot2type = HashMap<Int, SlotType>()
-    val constantValue = HashMap<Int, Pair<Int/*mark this is a value/index */, Long>>()
-    val arrayType = HashMap<Int, ArrayList<SlotType>>()
+    private val symbolTable = HashMap<Int, SymbolInfo>()
     val preFrames = TreeSet<Int>()
 
     fun init() = apply {
-        slot2type.clear()
-        constantValue.clear()
-        arrayType.clear()
-        return this
+        symbolTable.clear()
     }
 
     fun addPreFrame(index: Int) {
@@ -126,119 +107,39 @@ class StackFrame(val cursor: Int) {
 
     private fun merge(frame: Int) {
         val other = getFrameOrPut(frame)
-        for (entry in other.slot2type) {
-            if (slot2type[entry.key] == null) {
-                slot2type[entry.key] = entry.value
+        for (entry in other.symbolTable) {
+            if (symbolTable[entry.key] == null) {
+                symbolTable[entry.key] = entry.value
             } else {
-                if (slot2type[entry.key] != entry.value) {
-                    // if type conflict, means this slot must be written in current instruction
+                val value = symbolTable[entry.key]
+                if (value != entry.value) {
+                    // TODO type confliction
                     break
-                }
-            }
-        }
-        for (entry in other.constantValue) {
-            if (constantValue[entry.key] == null) {
-                constantValue[entry.key] = entry.value
-            } else {
-                val value = constantValue[entry.key]
-                if (value?.first != entry.value.first || value.second != entry.value.second) {
-                    // TODO can merge different constant value?
-                    throw TypeConfliction("Stack frame [$cursor](constant) can't merge [$frame] at ${entry.key}")
-                }
-            }
-        }
-        for (entry in other.arrayType) {
-            if (arrayType[entry.key] == null) {
-                arrayType[entry.key] = entry.value
-            } else {
-                val typeArray = arrayType[entry.key]
-                if (typeArray?.size != entry.value.size || typeArray?.last() != entry.value.last()) {
-                    // TODO can merge different array type?
-                    throw TypeConfliction("Stack frame [$cursor](array type) can't merge [$frame] at ${entry.key}")
                 }
             }
         }
     }
 
     fun pushElement(index: Int, type: TypeBox) {
-        if (type.getAsArrayType() != null) {
-            var arrayType = type.getAsArrayType()!!
-            var subType = arrayType.subType
-            var depth = 1
-            while (subType.getAsArrayType() != null) {
-                depth++
-                arrayType = subType.getAsArrayType()!!
-                subType = arrayType.subType
-            }
-            setSlotArray(index, *Array(depth + 1) { i ->
-                if (i < depth) SlotType.ARRAY else SlotType.convert(subType)!!})
-        } else {
-            setSlot(index, SlotType.convert(type)!!)
-        }
+        setSlot(index, SlotType.convert(type)!!)
     }
 
     fun setSlot(index: Int, type: SlotType) {
-        delLiteral(index)
-        delArray(index)
-        slot2type[index] = type
+        symbolTable[index] = SymbolInfo(type, SymbolType)
     }
 
     fun setSlotLiteral(index: Int, literal: Long, whichType: Int) {
-        delSlot(index)
-        delArray(index)
-        constantValue[index] = Pair(whichType, literal)
-    }
-
-    fun setSlotArray(index: Int, vararg types: SlotType) {
-        delSlot(index)
-        delLiteral(index)
-        arrayType[index] = ArrayList()
-        arrayType[index]?.addAll(types)
+        symbolTable[index] = SymbolInfo(literal, whichType)
     }
 
     fun setSlotWide(index: Int, type: SlotType) {
-        slot2type[index] = type
-        slot2type[index + 1] = type
+        symbolTable[index] = SymbolInfo(type, SymbolType)
+        symbolTable[index + 1] = symbolTable[index]!!
     }
 
-    fun slotType(index: Int): SlotType? {
-        if (slot2type.containsKey(index)) {
-            return slot2type[index]
-        }
-        if (arrayType.containsKey(index)) {
-            return SlotType.OBJECT
-        }
-        if (constantValue.containsKey(index)) {
-            return SlotType.INT
-        }
-        return null
-    }
+    fun getSlot(index: Int) = symbolTable[index]
 
-    fun getSlot(index: Int) = slot2type[index]
+    fun isStringIndex(slot: Int): Boolean = symbolTable[slot]?.isStringIndex() ?: false
 
-    fun isConstantPoolIndex(slot: Int): Boolean {
-        val type = constantValue[slot]?.first ?: return false
-        return type >= 4
-    }
-    fun isConstantPoolLiteral(slot: Int): Boolean {
-        val type = constantValue[slot]?.first ?: return false
-        return type < 4
-    }
-    fun isStringIndex(slot: Int): Boolean {
-        val type = constantValue[slot]?.first ?: return false
-        return (type and 4) != 0
-    }
-    fun isTypeIndex(slot: Int): Boolean {
-        val type = constantValue[slot]?.first ?: return false
-        return (type and 8) != 0
-    }
-    fun getLiteralExpect(slot: Int) = constantValue[slot]?.second ?: throw DecodeException("No constant value in [$slot]")
-
-    fun getArrayTypeExpect(slot: Int) = arrayType[slot] ?: throw DecodeException("No array type in [$slot]")
-
-    private fun delSlot(slot: Int) = slot2type.remove(slot)
-
-    private fun delLiteral(slot: Int) = constantValue.remove(slot)
-
-    private fun delArray(slot: Int) = arrayType.remove(slot)
+    fun isTypeIndex(slot: Int): Boolean = symbolTable[slot]?.isSymbolTypeIndex() ?: false
 }
