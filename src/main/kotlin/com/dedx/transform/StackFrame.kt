@@ -128,6 +128,10 @@ class StackFrame(val cursor: Int) {
         symbolTable[index] = SymbolInfo(type, SymbolType)
     }
 
+    fun setSlotArray(index: Int, vararg types: SlotType) {
+        symbolTable[index] = SymbolArrayInfo(types)
+    }
+
     fun setSlotLiteral(index: Int, literal: Long, whichType: Int) {
         symbolTable[index] = SymbolInfo(literal, whichType)
     }
@@ -138,6 +142,14 @@ class StackFrame(val cursor: Int) {
     }
 
     fun getSlot(index: Int) = symbolTable[index]
+
+    fun getArrayTypeExpect(slot: Int): SymbolArrayInfo {
+        val info = symbolTable[slot] ?: throw DecodeException("slot <$slot> is empty")
+        if (info !is SymbolArrayInfo) {
+            throw DecodeException("slot <$slot> is not array type object")
+        }
+        return info
+    }
 
     fun isStringIndex(slot: Int): Boolean = symbolTable[slot]?.isStringIndex() ?: false
 

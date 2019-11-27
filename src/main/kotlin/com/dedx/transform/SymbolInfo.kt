@@ -8,7 +8,7 @@ const val SymbolTypeIndex = 2
 const val StringIndex = 3
 const val NumberLiteral = 4
 
-class SymbolInfo private constructor(private val symbolIdentifier: Int) {
+open class SymbolInfo private constructor(private val symbolIdentifier: Int) {
     constructor(type: SlotType, identifier: Int): this(identifier) {
         this.type = type
     }
@@ -69,4 +69,24 @@ class SymbolInfo private constructor(private val symbolIdentifier: Int) {
         }
         return false
     }
+}
+
+class SymbolArrayInfo() : SymbolInfo(SlotType.ARRAY, SymbolType) {
+    private val subTypeList = ArrayList<SlotType>()
+
+    constructor(types: Array<out SlotType>) : this() {
+        subTypeList.addAll(types)
+    }
+
+    fun hasSubType() = subTypeList.isNotEmpty()
+
+    fun addSubType(type: SlotType) = subTypeList.add(type)
+
+    fun lastType() = subTypeList.last()
+
+    fun firstType() = subTypeList.first()
+
+    fun subSize() = subTypeList.size
+
+    fun getType(index: Int) = subTypeList[index]
 }
