@@ -24,11 +24,11 @@ And through the high version of the asm package, can produce a higher version of
 
 ~~Create class field writer~~
 
---> line number table
+~~line number table~~
 
---> Append stack frame map
+--> Rewrite stack frame map
 
-Optmization
+--> Optmization
 
 ### Test
 
@@ -70,3 +70,9 @@ public class ExampleLoader extends ClassLoader {
     }
 }
 ```
+
+### Note
+
+Master branch not ensure build and run success.
+
+If you want to use, please checkout tag.
