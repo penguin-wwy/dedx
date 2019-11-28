@@ -1086,6 +1086,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         val arrayType = dexNode.getType(dalvikInst.index).getAsArrayType() ?: throw DecodeException("New array type error", offset)
         if (arrayType.subType.getAsObjectType() != null) {
             pushTypeInst(jvmOpcodes.ANEWARRAY, arrayType.subType.getAsObjectType()!!.nameWithSlash())
+            visitStoreArray(SlotType.OBJECT, dalvikInst.regA(), frame)
         } else {
             when (arrayType.subType.getAsBasicType() ?: throw DecodeException("New array is not correct type", offset)) {
                 BasicType.BOOLEAN -> {
