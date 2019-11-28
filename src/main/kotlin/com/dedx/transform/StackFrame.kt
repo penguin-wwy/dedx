@@ -125,7 +125,7 @@ class StackFrame(val cursor: Int) {
     }
 
     fun setSlot(index: Int, type: SlotType) {
-        symbolTable[index] = SymbolInfo(type, SymbolType)
+        symbolTable[index] = SymbolInfo.create(type, SymbolType)
     }
 
     fun setSlotArray(index: Int, vararg types: SlotType) {
@@ -133,11 +133,11 @@ class StackFrame(val cursor: Int) {
     }
 
     fun setSlotLiteral(index: Int, literal: Long, whichType: Int) {
-        symbolTable[index] = SymbolInfo(literal, whichType)
+        symbolTable[index] = SymbolInfo.create(literal, whichType)
     }
 
     fun setSlotWide(index: Int, type: SlotType) {
-        symbolTable[index] = SymbolInfo(type, SymbolType)
+        symbolTable[index] = SymbolInfo.create(type, SymbolType)
         symbolTable[index + 1] = symbolTable[index]!!
     }
 

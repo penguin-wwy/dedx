@@ -8,16 +8,37 @@ const val SymbolTypeIndex = 2
 const val StringIndex = 3
 const val NumberLiteral = 4
 
-open class SymbolInfo private constructor(private val symbolIdentifier: Int) {
-    constructor(type: SlotType, identifier: Int): this(identifier) {
-        this.type = type
-    }
-    constructor(index: Long, identifier: Int): this(identifier) {
-        this.number = index
+open class SymbolInfo protected constructor(private val symbolIdentifier: Int) {
+
+    companion object {
+        fun create(type: SlotType, indent: Int) = SymbolInfo(indent).setType(type)
+
+        fun create(number: Long, indent: Int) = SymbolInfo(indent).setNumber(number)
+
+        fun equal(left: SymbolInfo, right: SymbolInfo): Boolean {
+            if (left.symbolIdentifier != right.symbolIdentifier) {
+                return false
+            }
+            if (left::type.isInitialized && right::type.isInitialized && left.type == right.type) {
+                return true
+            }
+            if (left.number > -1 && left.number == right.number) {
+                return true
+            }
+            return false
+        }
     }
 
     private lateinit var type: SlotType
     private var number: Long = -1
+
+    protected fun setType(t: SlotType) = also {
+        it.type = t
+    }
+
+    protected fun setNumber(n: Long) = also {
+        it.number = n
+    }
 
     fun isSymbolType() = symbolIdentifier == SymbolType
     fun isSymbolTypeIndex() = symbolIdentifier == SymbolTypeIndex
@@ -57,28 +78,13 @@ open class SymbolInfo private constructor(private val symbolIdentifier: Int) {
     fun getNumber() = if (symbolIdentifier > SymbolType && number > -1) number else throw DecodeException("This symbol has no number")
 
     fun getNumberOrNull() = if (symbolIdentifier > SymbolType && number > -1) number else null
-
-    override fun equals(other: Any?): Boolean {
-        if (other == null) {
-            return false
-        }
-        if (other !is SymbolInfo) {
-            return false
-        }
-        if (symbolIdentifier != other.symbolIdentifier) {
-            return false
-        }
-        if (this::type.isInitialized && other::type.isInitialized && type.equals(other.type)) {
-            return true
-        }
-        if (number != -1L && other.number != -1L && number == other.number) {
-            return true
-        }
-        return false
-    }
 }
 
-class SymbolArrayInfo() : SymbolInfo(SlotType.ARRAY, SymbolType) {
+class SymbolArrayInfo() : SymbolInfo(SymbolType) {
+    init {
+        setType(SlotType.ARRAY)
+    }
+
     private val subTypeList = ArrayList<SlotType>()
 
     constructor(types: Array<out SlotType>) : this() {

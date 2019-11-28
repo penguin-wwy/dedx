@@ -102,6 +102,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
 //        if (clsTransformer.config.optLevel >= Configuration.Optimized) {
 //            visitOptimization()
 //        } else {
+        logger.atInfo().log("Start method body [${logInfo()}]")
             return visitNormal()
 //        }
     }
