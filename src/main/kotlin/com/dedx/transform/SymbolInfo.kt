@@ -47,9 +47,16 @@ open class SymbolInfo private constructor(private val symbolIdentifier: Int) {
     fun getStringOrNull(transformer: InstTransformer) = if (symbolIdentifier == StringIndex && number > -1 && number < Int.MAX_VALUE)
         transformer.string(number.toInt()) else null
 
-    fun getNumber() = if (symbolIdentifier == NumberLiteral && number > -1) number else throw DecodeException("This symbol not number literal")
+    // get number as number literal
+    fun getNumberLiteral() = if (symbolIdentifier == NumberLiteral && number > -1) number
+    else throw DecodeException("This symbol not number literal")
 
-    fun getNumberOrNull() = if (symbolIdentifier == NumberLiteral && number > -1) number else null
+    fun getNumberLiteralOrNull() = if (symbolIdentifier == NumberLiteral && number > -1) number else null
+
+    // get number as index or number literal
+    fun getNumber() = if (symbolIdentifier > SymbolType && number > -1) number else throw DecodeException("This symbol has no number")
+
+    fun getNumberOrNull() = if (symbolIdentifier > SymbolType && number > -1) number else null
 
     override fun equals(other: Any?): Boolean {
         if (other == null) {
