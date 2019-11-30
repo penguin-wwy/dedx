@@ -7,7 +7,6 @@ import com.dedx.dex.pass.DataFlowAnalysisPass
 import com.dedx.dex.pass.DataFlowMethodInfo
 import com.dedx.dex.struct.*
 import com.dedx.dex.struct.type.BasicType
-import com.dedx.tools.Configuration
 import com.dedx.utils.DecodeException
 import com.dedx.utils.TypeConfliction
 import com.google.common.flogger.FluentLogger
@@ -478,22 +477,22 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         val slot = dalvikInst.regA()
         when (dalvikInst.opcode) {
             Opcodes.CONST_4 -> {
-                frame.setSlotLiteral(slot, dalvikInst.literalByte.toLong(), NumberLiteral)
+                frame.setSlotLiteral(slot, dalvikInst.literalByte.toLong(), SymIdentifier.NumberLiteral)
             }
             Opcodes.CONST_16 -> {
-                frame.setSlotLiteral(slot, dalvikInst.literalUnit.toLong(), NumberLiteral)
+                frame.setSlotLiteral(slot, dalvikInst.literalUnit.toLong(), SymIdentifier.NumberLiteral)
             }
             in Opcodes.CONST..Opcodes.CONST_HIGH16 -> {
-                frame.setSlotLiteral(slot, dalvikInst.literalInt.toLong(), NumberLiteral)
+                frame.setSlotLiteral(slot, dalvikInst.literalInt.toLong(), SymIdentifier.NumberLiteral)
             }
             in Opcodes.CONST_WIDE_16..Opcodes.CONST_WIDE_HIGH16 -> {
-                frame.setSlotLiteral(slot, dalvikInst.literal,NumberLiteral) // also double type
+                frame.setSlotLiteral(slot, dalvikInst.literal, SymIdentifier.NumberLiteral) // also double type
             }
             Opcodes.CONST_STRING, Opcodes.CONST_STRING_JUMBO -> {
-                frame.setSlotLiteral(slot, dalvikInst.index.toLong(), StringIndex) // constant pool index as int type
+                frame.setSlotLiteral(slot, dalvikInst.index.toLong(), SymIdentifier.StringIndex) // constant pool index as int type
             }
             Opcodes.CONST_CLASS -> {
-                frame.setSlotLiteral(slot, dalvikInst.index.toLong(), SymbolTypeIndex) // constant pool index as int type
+                frame.setSlotLiteral(slot, dalvikInst.index.toLong(), SymIdentifier.SymbolTypeIndex) // constant pool index as int type
             }
         }
     }

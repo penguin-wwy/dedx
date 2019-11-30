@@ -7,6 +7,7 @@ import com.dedx.dex.struct.type.BasicType
 import com.dedx.dex.struct.type.TypeBox
 import com.dedx.utils.DecodeException
 import com.dedx.utils.TypeConfliction
+import java.lang.StringBuilder
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -125,19 +126,19 @@ class StackFrame(val cursor: Int) {
     }
 
     fun setSlot(index: Int, type: SlotType) {
-        symbolTable[index] = SymbolInfo.create(type, SymbolType)
+        symbolTable[index] = SymbolInfo.create(type, SymIdentifier.SymbolType)
     }
 
     fun setSlotArray(index: Int, vararg types: SlotType) {
         symbolTable[index] = SymbolArrayInfo(types)
     }
 
-    fun setSlotLiteral(index: Int, literal: Long, whichType: Int) {
+    fun setSlotLiteral(index: Int, literal: Long, whichType: SymIdentifier) {
         symbolTable[index] = SymbolInfo.create(literal, whichType)
     }
 
     fun setSlotWide(index: Int, type: SlotType) {
-        symbolTable[index] = SymbolInfo.create(type, SymbolType)
+        symbolTable[index] = SymbolInfo.create(type, SymIdentifier.SymbolType)
         symbolTable[index + 1] = symbolTable[index]!!
     }
 
@@ -154,4 +155,13 @@ class StackFrame(val cursor: Int) {
     fun isStringIndex(slot: Int): Boolean = symbolTable[slot]?.isStringIndex() ?: false
 
     fun isTypeIndex(slot: Int): Boolean = symbolTable[slot]?.isSymbolTypeIndex() ?: false
+
+    override fun toString(): String {
+        val outString = StringBuilder("{\n")
+        for (entry in symbolTable) {
+            outString.append("\t${entry.key} : ${entry.value}\n")
+        }
+        outString.append("}\n")
+        return outString.toString()
+    }
 }
