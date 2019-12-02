@@ -6,9 +6,11 @@ import com.android.dx.io.OpcodeInfo
 import com.android.dx.io.Opcodes
 import com.android.dx.io.instructions.DecodedInstruction
 import com.android.dx.io.instructions.ShortArrayCodeInput
+import com.dedx.dex.struct.type.BasicType
 import com.dedx.dex.struct.type.DalvikAnnotationDefault
 import com.dedx.dex.struct.type.TypeBox
 import com.dedx.dex.struct.type.isSystemCommentType
+import com.dedx.transform.SlotType
 import com.dedx.utils.DecodeException
 import java.lang.IllegalArgumentException
 import java.util.*
@@ -150,7 +152,11 @@ class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVir
                 throw DecodeException("regs count less argument count in $mthInfo")
             }
             argsList.add(InstArgNode(argRegOff, args))
-            argRegOff++
+            if (args.getAsBasicType() == BasicType.LONG || args.getAsBasicType() == BasicType.DOUBLE) {
+                argRegOff += 2
+            } else {
+                argRegOff++
+            }
         }
     }
 
