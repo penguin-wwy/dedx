@@ -433,28 +433,47 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             InvokeType.INVOKESTATIC -> 0
             else -> 1
         }
-        if (dalvikInst.registerCount != mthInfo.args.size + thisPos)
-            throw DecodeException("argument count error", offset)
+        //
+//        if (dalvikInst.registerCount != mthInfo.args.size + thisPos)
+//            throw DecodeException("argument count error", offset)
+        var skip = false
         if (thisPos == 1) {
             for (i in 0 until dalvikInst.registerCount) {
+                if (skip) {
+                    skip = false
+                    continue
+                }
                 val argPos = i - thisPos
+                val type = if (argPos == -1) SlotType.OBJECT else SlotType.convert(mthInfo.args[argPos])
+                        ?: throw DecodeException("invoke argument type error.", offset)
+                if (type == SlotType.LONG || type == SlotType.DOUBLE) {
+                    skip = true
+                }
                 when (argPos) {
                     -1 -> visitLoad(dalvikInst.regA(), SlotType.OBJECT, offset) // push this
-                    0 -> visitLoad(dalvikInst.regB(), SlotType.convert(mthInfo.args[argPos])!!, offset)
-                    1 -> visitLoad(dalvikInst.regC(), SlotType.convert(mthInfo.args[argPos])!!, offset)
-                    2 -> visitLoad(dalvikInst.regD(), SlotType.convert(mthInfo.args[argPos])!!, offset)
-                    3 -> visitLoad(dalvikInst.regE(), SlotType.convert(mthInfo.args[argPos])!!, offset)
+                    0 -> visitLoad(dalvikInst.regB(), type, offset)
+                    1 -> visitLoad(dalvikInst.regC(), type, offset)
+                    2 -> visitLoad(dalvikInst.regD(), type, offset)
+                    3 -> visitLoad(dalvikInst.regE(), type, offset)
                     else -> throw DecodeException("invoke instruction register number error.", offset)
                 }
             }
         } else {
             for(i in 0 until dalvikInst.registerCount) {
+                if (skip) {
+                    skip = false
+                    continue
+                }
+                val type = SlotType.convert(mthInfo.args[i]) ?: throw DecodeException("invoke argument type error.", offset)
+                if (type == SlotType.LONG || type == SlotType.DOUBLE) {
+                    skip = true
+                }
                 when (i) {
-                    0 -> visitLoad(dalvikInst.regA(), SlotType.convert(mthInfo.args[i])!!, offset)
-                    1 -> visitLoad(dalvikInst.regB(), SlotType.convert(mthInfo.args[i])!!, offset)
-                    2 -> visitLoad(dalvikInst.regC(), SlotType.convert(mthInfo.args[i])!!, offset)
-                    3 -> visitLoad(dalvikInst.regD(), SlotType.convert(mthInfo.args[i])!!, offset)
-                    4 -> visitLoad(dalvikInst.regE(), SlotType.convert(mthInfo.args[i])!!, offset)
+                    0 -> visitLoad(dalvikInst.regA(), type, offset)
+                    1 -> visitLoad(dalvikInst.regB(), type, offset)
+                    2 -> visitLoad(dalvikInst.regC(), type, offset)
+                    3 -> visitLoad(dalvikInst.regD(), type, offset)
+                    4 -> visitLoad(dalvikInst.regE(), type, offset)
                     else -> throw DecodeException("invoke instruction register number error.", offset)
                 }
             }
