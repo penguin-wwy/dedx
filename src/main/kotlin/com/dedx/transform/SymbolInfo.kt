@@ -30,7 +30,7 @@ open class SymbolInfo protected constructor(private val symbolIdentifier: SymIde
             if (left::type.isInitialized && right::type.isInitialized && left.type == right.type) {
                 return true
             }
-            if (left.number > -1 && left.number == right.number) {
+            if (left.number != null && left.number == right.number) {
                 return true
             }
             return false
@@ -39,7 +39,7 @@ open class SymbolInfo protected constructor(private val symbolIdentifier: SymIde
 
     private lateinit var sourceDex: DexNode
     private lateinit var type: SlotType
-    private var number: Long = -1
+    private var number: Long? = null
 
     public fun setSourceDex(dex: DexNode) = also {
         sourceDex = dex
@@ -62,35 +62,35 @@ open class SymbolInfo protected constructor(private val symbolIdentifier: SymIde
         type else throw DecodeException("This symbol not type")
 
     fun getType(dex: DexNode) = if (this::type.isInitialized && symbolIdentifier == SymIdentifier.SymbolTypeIndex)
-        dex.getType(number.toInt()) else throw DecodeException("This symbol not class type")
+        dex.getType(getNumber().toInt()) else throw DecodeException("This symbol not class type")
 
     fun getTypeOrNull() = if (this::type.isInitialized && symbolIdentifier == SymIdentifier.SymbolType) type else null
 
     fun getTypeOrNull(dex: DexNode) = if (this::type.isInitialized && symbolIdentifier == SymIdentifier.SymbolTypeIndex)
-        dex.getType(number.toInt()) else null
+        dex.getType(getNumber().toInt()) else null
 
-    fun getString(dex: DexNode): String = if (symbolIdentifier == SymIdentifier.StringIndex && number > -1 && number < Int.MAX_VALUE)
-        dex.getString(number.toInt()) else throw DecodeException("This symbol not string")
+    fun getString(dex: DexNode): String = if (symbolIdentifier == SymIdentifier.StringIndex && number != null)
+        dex.getString(getNumber().toInt()) else throw DecodeException("This symbol not string")
 
-    fun getString(transformer: InstTransformer): String = if (symbolIdentifier == SymIdentifier.StringIndex && number > -1 && number < Int.MAX_VALUE)
-        transformer.string(number.toInt()) else throw DecodeException("This symbol not string")
+    fun getString(transformer: InstTransformer): String = if (symbolIdentifier == SymIdentifier.StringIndex && number != null)
+        transformer.string(getNumber().toInt()) else throw DecodeException("This symbol not string")
 
-    fun getStringOrNull(dex: DexNode) = if (symbolIdentifier == SymIdentifier.StringIndex && number > -1 && number < Int.MAX_VALUE)
-        dex.getString(number.toInt()) else null
+    fun getStringOrNull(dex: DexNode) = if (symbolIdentifier == SymIdentifier.StringIndex && number != null)
+        dex.getString(getNumber().toInt()) else null
 
-    fun getStringOrNull(transformer: InstTransformer) = if (symbolIdentifier == SymIdentifier.StringIndex && number > -1 && number < Int.MAX_VALUE)
-        transformer.string(number.toInt()) else null
+    fun getStringOrNull(transformer: InstTransformer) = if (symbolIdentifier == SymIdentifier.StringIndex && number != null)
+        transformer.string(getNumber().toInt()) else null
 
     // get number as number literal
-    fun getNumberLiteral() = if (symbolIdentifier == SymIdentifier.NumberLiteral && number > -1) number
+    fun getNumberLiteral() = if (symbolIdentifier == SymIdentifier.NumberLiteral && number != null) number
     else throw DecodeException("This symbol not number literal")
 
-    fun getNumberLiteralOrNull() = if (symbolIdentifier == SymIdentifier.NumberLiteral && number > -1) number else null
+    fun getNumberLiteralOrNull() = if (symbolIdentifier == SymIdentifier.NumberLiteral && number != null) number else null
 
     // get number as index or number literal
-    fun getNumber() = if (symbolIdentifier > SymIdentifier.SymbolType && number > -1) number else throw DecodeException("This symbol has no number")
+    fun getNumber() = if (symbolIdentifier > SymIdentifier.SymbolType && number != null) number as Long else throw DecodeException("This symbol has no number")
 
-    fun getNumberOrNull() = if (symbolIdentifier > SymIdentifier.SymbolType && number > -1) number else null
+    fun getNumberOrNull() = if (symbolIdentifier > SymIdentifier.SymbolType && number != null) number else null
 
     fun toString(dex: DexNode): String {
         val outString = StringBuilder("<$symbolIdentifier> ")
