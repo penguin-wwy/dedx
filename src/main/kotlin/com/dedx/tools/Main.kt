@@ -33,7 +33,7 @@ fun createCmdTable(): Options {
             .longOpt("output")
             .hasArg().argName("dirname").desc("Specify output dirname").build()
     val optLevel = Option.builder()
-            .longOpt("opt").hasArg().argName("[fast|normal|optimize]")
+            .longOpt("opt").hasArg().argName("[fast|normal]") // |optimize
             .desc("Specify optimization level").build()
     val logFile = Option.builder().longOpt("log").desc("Specify log file").hasArg().build()
     val debug = Option.builder("g").longOpt("debug").desc("Print debug info").build()
@@ -74,7 +74,7 @@ fun configFromOptions(args: Array<String>, optTable: Options) {
             CmdConfiguration.optLevel = when (cmdTable.getOptionValue("opt")) {
                 "fast" -> Configuration.NormalFast
                 "normal" -> Configuration.NormalOpt
-                "optimize" -> Configuration.Optimized
+//                "optimize" -> Configuration.Optimized
                 else -> {
                     throw RuntimeException("Invalid parameter for 'opt'")
                 }
