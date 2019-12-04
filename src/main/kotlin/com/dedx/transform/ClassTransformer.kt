@@ -43,6 +43,7 @@ class ClassTransformer(private val clsNode: ClassNode,
         visitMethod()
         classWriter.visitSource(sourceFile, null)
         classWriter.visitEnd()
+        config.addSuccess(success).addFailed(failed)
         logger.atInfo().log("[${clsNode.clsInfo} end] Success/Failed $success/$failed")
     }
 

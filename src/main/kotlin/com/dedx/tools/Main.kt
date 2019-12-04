@@ -4,6 +4,7 @@ import com.dedx.dex.struct.ClassNode
 import com.dedx.dex.struct.DexNode
 import com.dedx.transform.ClassTransformer
 import com.dedx.utils.DecodeException
+import com.google.common.flogger.FluentLogger
 import org.apache.commons.cli.*
 import java.io.File
 import java.io.FileReader
@@ -130,8 +131,12 @@ fun runMain(): Int {
                 compileClass(classNode)
             }
         }
+        FluentLogger.forEnclosingClass().atInfo().log("All method success/fail: " +
+                "${CmdConfiguration.successNum}/${CmdConfiguration.failedNum}")
         return 0
     } catch (e: Throwable) {
+        FluentLogger.forEnclosingClass().atInfo().log("All method success/fail: " +
+                "${CmdConfiguration.successNum}/${CmdConfiguration.failedNum}")
         e.printStackTrace()
     }
     return 1

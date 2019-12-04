@@ -11,10 +11,23 @@ open class Configuration {
     var logFile: String? = null
     var debug: Boolean = false
 
+    var successNum = 0
+    var failedNum = 0
+
     companion object {
         const val NormalFast = 0
         const val NormalOpt = 1
         const val Optimized = 2
+    }
+
+    @Synchronized
+    fun addSuccess(num: Int = 1) = also {
+        successNum += num
+    }
+
+    @Synchronized
+    fun addFailed(num: Int = 1) = also {
+        failedNum += num
     }
 }
 
