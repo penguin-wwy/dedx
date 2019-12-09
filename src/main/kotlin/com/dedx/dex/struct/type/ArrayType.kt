@@ -12,7 +12,7 @@ class ArrayType(val subType: TypeBox) {
         var desc = StringBuilder("[")
         var subType = this.subType
         loop@ while (true) {
-            when (subType.type) {
+            when (subType.type::class) {
                 ArrayType::class -> {
                     desc.append("[")
                     subType = (subType as ArrayType).subType
@@ -24,6 +24,28 @@ class ArrayType(val subType: TypeBox) {
             }
         }
         return desc.toString()
+    }
+
+    fun nameWithSlash(): String {
+        var name = StringBuilder("[")
+        var subType = this.subType
+        loop@ while (true) {
+            when (subType.type::class) {
+                ArrayType::class -> {
+                    name.append("[")
+                    subType = (subType.type as ArrayType).subType
+                }
+                ObjectType::class -> {
+                    name.append((subType.type as ObjectType).nameWithSlash())
+                    break@loop
+                }
+                else -> {
+                    name.append(subType.descriptor())
+                    break@loop
+                }
+            }
+        }
+        return name.toString()
     }
 
     override fun hashCode(): Int {

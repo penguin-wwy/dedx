@@ -59,6 +59,13 @@ class TypeBox private constructor(val type: Any) {
         else -> ""
     }
 
+    fun nameWithSlash() = when (type::class) {
+        BasicType::class -> descriptor()
+        ObjectType::class -> getAsObjectType()!!.nameWithSlash()
+        ArrayType::class -> getAsArrayType()!!.nameWithSlash()
+        else -> ""
+    }
+
     override fun hashCode(): Int {
         return type.hashCode()
     }

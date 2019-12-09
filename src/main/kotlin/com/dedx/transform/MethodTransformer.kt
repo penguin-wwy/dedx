@@ -1128,8 +1128,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
 
     private fun visitCheckCast(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
         visitLoad(dalvikInst.regA(), SlotType.OBJECT, offset)
-        val type = dexNode.getType(dalvikInst.index).getAsObjectType()
-                ?: throw DecodeException("CheckCast without object type", offset)
+        val type = dexNode.getType(dalvikInst.index)
         pushTypeInst(jvmOpcodes.CHECKCAST, type.nameWithSlash())
         visitStore(SlotType.OBJECT, dalvikInst.regA(), frame)
     }
