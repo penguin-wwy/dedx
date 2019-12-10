@@ -75,8 +75,17 @@ boolean assertResult(tag, String classFile) {
         case "BClass" : return BClassAssert(classFile)
         case "CClass" : return CClassAssert(classFile)
         case "TryCatchTest" : return TryCatchAssert(classFile)
+        case "ArrayTest" : return ArrayTestAssert(classFile)
         default: return true
     }
+}
+
+def ArrayTestAssert(String classFile) {
+    def loader = new DynamicClassLoader()
+    def arrayTestClass = loader.defineClass("ArrayTest", Files.readAllBytes(Paths.get(classFile)))
+    def arrayString = arrayTestClass.getMethod("arrayString")
+    assert arrayString.invoke(null).equals("ArrayTest".length())
+    return true
 }
 
 def BaseAssert(String classFile) {
@@ -137,7 +146,8 @@ def TryCatchAssert(String classFile) {
 
 static void main(String[] args) {
     println 'ScriptMain Groovy Script.'
-    def dexFilesToClass = ['com.test.Base' : 'Base.dex', 'CClass' : 'CClass.dex', 'TryCatchTest' : 'TryCatchTest.dex']
+    def dexFilesToClass = ['com.test.Base' : 'Base.dex', 'CClass' : 'CClass.dex', 'TryCatchTest' : 'TryCatchTest.dex',
+                           'ArrayTest' : 'ArrayTest.dex']
     def dexFilesToJar = ['AClass' : 'AClasses.dex']
     try {
         for (entry in dexFilesToClass) {
