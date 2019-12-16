@@ -15,7 +15,7 @@ class ArrayType(val subType: TypeBox) {
             when (subType.type::class) {
                 ArrayType::class -> {
                     desc.append("[")
-                    subType = (subType as ArrayType).subType
+                    subType = (subType.type as ArrayType).subType
                 }
                 else -> {
                     desc.append(subType.descriptor())

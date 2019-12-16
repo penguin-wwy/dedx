@@ -10,6 +10,6 @@ class DecodeException: Exception {
 
     constructor(message: String, offset: Int): this("$message [offset: $offset]\n${StackFrame.getFrameOrPut(offset)}")
 
-    constructor(message: String, offset: Int, cause: Throwable): this("$message [offset: $offset]\n" +
-            "${StackFrame.getFrameOrPut(offset)}", cause)
+    constructor(message: String, offset: Int, cause: Exception): this("$message [offset: $offset]\n" +
+            "${StackFrame.getFrameOrPut(offset)}\n\t$cause")
 }

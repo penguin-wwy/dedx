@@ -48,6 +48,8 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
     var skipInst = 0 // mark instruction number which skip
     val instMap = HashMap<InstNode, List<JvmInst>>()
     val currentInstList = ArrayList<JvmInst>()
+    // use list for exception nested
+    val exception2Catch = HashMap<String /*exception type*/, MutableList<Pair<Pair<Int /*start*/, Int /*end*/>, Int /*catch inst*/>>>()
     var maxStack = 0
     var maxLocal = 0
 
@@ -111,8 +113,10 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             StackFrame.initInstFrame(mthNode)
             val entryFrame = StackFrame.getFrameOrPut(0)
             for (type in mthNode.argsList) {
+                logger.atInfo().log("Set argument [${slotNum(type.regNum)}] ${type.type}")
                 entryFrame.pushElement(slotNum(type.regNum), type.type)
             }
+            visitExceptionStackFrame()
             prevLineNumber = 0
             skipInst = 0
             // add JvmInst to manager
@@ -154,6 +158,23 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         DataFlowAnalysisPass.livenessAnalyzer(dfInfo!!)
         // TODO tranform by optimize
         return false
+    }
+
+    private fun visitExceptionStackFrame() {
+        for (tcBlock in mthNode.tryBlockList) {
+            val start = tcBlock.instList[0].cursor
+            val end = (mthNode.getNextInst(tcBlock.instList.last().cursor)
+                    ?: throw DecodeException("try block end out of bounds")).cursor
+            for (exec in tcBlock.execHandlers) {
+                val catchInst = code(exec.addr) ?: continue
+                if (catchInst.instruction.opcode != Opcodes.MOVE_EXCEPTION) {
+                    for (type in exec.typeList()) {
+                        exception2Catch.putIfAbsent(type ?: "Throwable", ArrayList())?.add(Pair(Pair(start, end), catchInst.cursor))
+                                ?: exception2Catch[type ?: "Throwable"]?.add(Pair(Pair(start, end), catchInst.cursor))
+                    }
+                }
+            }
+        }
     }
 
     private fun visitTryCatchBlock() {
