@@ -50,6 +50,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
     val currentInstList = ArrayList<JvmInst>()
     // use list for exception nested
     val exception2Catch = HashMap<String /*exception type*/, MutableList<Pair<Pair<Int /*start*/, Int /*end*/>, Int /*catch inst*/>>>()
+    val catch2Exception = HashMap<Int, MutableList<Pair<String, Pair<Int, Int>>>>()
     var maxStack = 0
     var maxLocal = 0
 
@@ -169,8 +170,14 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
                 val catchInst = code(exec.addr) ?: continue
                 if (catchInst.instruction.opcode != Opcodes.MOVE_EXCEPTION) {
                     for (type in exec.typeList()) {
-                        exception2Catch.putIfAbsent(type ?: "Throwable", ArrayList())?.add(Pair(Pair(start, end), catchInst.cursor))
-                                ?: exception2Catch[type ?: "Throwable"]?.add(Pair(Pair(start, end), catchInst.cursor))
+                        exception2Catch.putIfAbsent(type ?: Throwable::class.java.name, ArrayList())
+                                ?.add(Pair(Pair(start, end), catchInst.cursor))
+                                ?: exception2Catch[type ?: Throwable::class.java.name]
+                                        ?.add(Pair(Pair(start, end), catchInst.cursor))
+                        catch2Exception.putIfAbsent(catchInst.cursor, ArrayList())
+                                ?.add(Pair(type ?: Throwable::class.java.name, Pair(start, end)))
+                                ?: catch2Exception[catchInst.cursor]
+                                        ?.add(Pair(type ?: Throwable::class.java.name, Pair(start, end)))
                     }
                 }
             }
@@ -360,7 +367,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
                 visitStore(newestReturn ?: throw DecodeException("MOVE_RESULT by null", inst.cursor), dalvikInst.regA(), frame)
             }
             Opcodes.MOVE_EXCEPTION -> {
-                visitStore(SlotType.OBJECT, dalvikInst.regA(), frame)
+                visitMoveException(dalvikInst as OneRegisterDecodedInstruction, frame, inst.cursor)
             }
             Opcodes.RETURN_VOID -> {
                 visitReturnVoid()
@@ -1265,6 +1272,14 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             visitPushOrLdc(slotNum(dalvikInst.a + i), SlotType.INT, offset)
         }
         pushMultiANewArrayInsn("I", dalvikInst.registerCount)
+    }
+
+    private fun visitMoveException(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        catch2Exception[offset]?.forEach {
+            frame.addPreFrame(it.second.first)
+        }
+        frame.merge()
+        visitStore(SlotType.OBJECT, dalvikInst.regA(), frame)
     }
 
     private fun logInfo() = "${mthNode.mthInfo}"
