@@ -50,7 +50,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
     val currentInstList = ArrayList<JvmInst>()
     // use list for exception nested
     val exception2Catch = HashMap<String /*exception type*/, MutableList<Pair<Pair<Int /*start*/, Int /*end*/>, Int /*catch inst*/>>>()
-    val catch2Exception = HashMap<Int, MutableList<Pair<String, Pair<Int, Int>>>>()
+    val catch2Exception = HashMap<Int /*catch inst*/, MutableList<Pair<String /*exception type*/, Pair<Int /*start*/, Int /*end*/>>>>()
     var maxStack = 0
     var maxLocal = 0
 
@@ -168,7 +168,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
                     ?: throw DecodeException("try block end out of bounds")).cursor
             for (exec in tcBlock.execHandlers) {
                 val catchInst = code(exec.addr) ?: continue
-                if (catchInst.instruction.opcode != Opcodes.MOVE_EXCEPTION) {
+                if (catchInst.instruction.opcode == Opcodes.MOVE_EXCEPTION) {
                     for (type in exec.typeList()) {
                         exception2Catch.putIfAbsent(type ?: Throwable::class.java.name, ArrayList())
                                 ?.add(Pair(Pair(start, end), catchInst.cursor))
@@ -1275,6 +1275,8 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
     }
 
     private fun visitMoveException(dalvikInst: OneRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
+        // now only merge try-catch block `start` inst
+        // TODO need analysis inst which can throw exception
         catch2Exception[offset]?.forEach {
             frame.addPreFrame(it.second.first)
         }
