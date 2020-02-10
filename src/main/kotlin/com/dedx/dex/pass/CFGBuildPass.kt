@@ -33,7 +33,6 @@ object CFGBuildPass {
                     connectBlock(meth, currBlock, meth.code(inst.target())!!)
                 }
                 Opcodes.THROW -> {
-
                 }
                 in Opcodes.RETURN_VOID..Opcodes.RETURN_OBJECT -> {
                     meth.exits.add(currBlock)

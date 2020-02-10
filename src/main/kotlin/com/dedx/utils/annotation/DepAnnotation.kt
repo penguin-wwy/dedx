@@ -4,7 +4,8 @@ import kotlin.reflect.KClass
 
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class DepClass (
-        val klass: KClass<out Any>,
-        val method: String = "<clinit>",
-        val input: Boolean)
+annotation class DepClass(
+    val klass: KClass<out Any>,
+    val method: String = "<clinit>",
+    val input: Boolean
+)

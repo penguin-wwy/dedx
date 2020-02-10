@@ -2,14 +2,14 @@ package com.dedx.utils
 
 import com.dedx.transform.StackFrame
 
-class DecodeException: Exception {
+class DecodeException : Exception {
 
-    constructor(message: String): super(message)
+    constructor(message: String) : super(message)
 
-    constructor(message: String, cause: Throwable): super(message, cause)
+    constructor(message: String, cause: Throwable) : super(message, cause)
 
-    constructor(message: String, offset: Int): this("$message [offset: $offset]\n${StackFrame.getFrameOrPut(offset)}")
+    constructor(message: String, offset: Int) : this("$message [offset: $offset]\n${StackFrame.getFrameOrPut(offset)}")
 
-    constructor(message: String, offset: Int, cause: Exception): this("$message [offset: $offset]\n" +
+    constructor(message: String, offset: Int, cause: Exception) : this("$message [offset: $offset]\n" +
             "${StackFrame.getFrameOrPut(offset)}\n\t$cause")
 }

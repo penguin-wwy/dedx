@@ -3,12 +3,14 @@ package com.dedx.dex.struct
 import com.dedx.dex.struct.type.ObjectType
 import com.dedx.dex.struct.type.TypeBox
 
-class ClassInfo private constructor(val type: TypeBox,
-                                    val pkg: String,
-                                    val name: String,
-                                    val fullName: String,
-                                    val parentClass: ClassInfo?,
-                                    val isInner: Boolean): Comparable<ClassInfo> {
+class ClassInfo private constructor(
+    val type: TypeBox,
+    val pkg: String,
+    val name: String,
+    val fullName: String,
+    val parentClass: ClassInfo?,
+    val isInner: Boolean
+) : Comparable<ClassInfo> {
 
     companion object {
         const val ROOT_CLASS_NAME = "java/lang/Object"

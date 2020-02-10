@@ -2,10 +2,12 @@ package com.dedx.dex.struct
 
 import com.dedx.dex.struct.type.TypeBox
 
-class MethodInfo private constructor(val name: String,
-                                     val retType: TypeBox,
-                                     val args: List<TypeBox>,
-                                     val declClass: ClassInfo) {
+class MethodInfo private constructor(
+    val name: String,
+    val retType: TypeBox,
+    val args: List<TypeBox>,
+    val declClass: ClassInfo
+) {
 
     var descriptor: String? = null
     companion object {

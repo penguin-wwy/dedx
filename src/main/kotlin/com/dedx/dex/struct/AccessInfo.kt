@@ -10,5 +10,5 @@ interface AccessInfo {
     fun isFinal() = (accFlags and AccessFlags.ACC_FINAL) != 0
     fun isStatic() = (accFlags and AccessFlags.ACC_STATIC) != 0
     fun isAbstract() = (accFlags and AccessFlags.ACC_ABSTRACT) != 0
-    fun isInterface() =  (accFlags and AccessFlags.ACC_INTERFACE) != 0
+    fun isInterface() = (accFlags and AccessFlags.ACC_INTERFACE) != 0
 }

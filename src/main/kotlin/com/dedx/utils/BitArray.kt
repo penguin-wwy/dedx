@@ -4,10 +4,10 @@ import java.lang.Exception
 import kotlin.collections.ArrayList
 import kotlin.math.max
 
-class BitArrayOutIndex: Exception {
-    constructor(message: String): super(message)
+class BitArrayOutIndex : Exception {
+    constructor(message: String) : super(message)
 
-    constructor(message: String, cause: Throwable): super(message, cause)
+    constructor(message: String, cause: Throwable) : super(message, cause)
 }
 
 class BitArray(val size: Int) {
@@ -80,7 +80,6 @@ class BitArray(val size: Int) {
             }
             return result
         }
-
     }
 
     fun setTrue(index: Int) {
@@ -100,7 +99,7 @@ class BitArray(val size: Int) {
         val base = index / Byte.SIZE_BITS
         val offset = index % Byte.SIZE_BITS
         val tmp = _array[base].toInt()
-        _array[base] = (tmp and (0xFF xor  (0x1 shl offset))).toByte()
+        _array[base] = (tmp and (0xFF xor (0x1 shl offset))).toByte()
     }
 
     fun get(index: Int): Int {

@@ -1,13 +1,12 @@
 package com.dedx.dex.struct
 
 import com.android.dex.ClassData
-import com.dedx.dex.struct.type.TypeBox
 
 interface FieldFactory {
     fun create(parent: ClassNode, field: ClassData.Field): FieldNode
 }
 
-class FieldNode private constructor(val parent: ClassNode, val fieldInfo: FieldInfo, access: Int): AccessInfo, AttrNode {
+class FieldNode private constructor(val parent: ClassNode, val fieldInfo: FieldInfo, access: Int) : AccessInfo, AttrNode {
     override val accFlags: Int = access
     override var attributes: MutableMap<AttrKey, AttrValue> = HashMap()
     companion object : FieldFactory {

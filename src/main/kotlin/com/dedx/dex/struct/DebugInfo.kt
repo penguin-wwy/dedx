@@ -2,8 +2,8 @@ package com.dedx.dex.struct
 
 import com.dedx.dex.struct.type.TypeBox
 
-class NamedDebugInfo(override val value: MutableList<AttrValue> = MutableList(5) {i -> AttrValue.Empty })
-    : AttrValueList(value) {
+class NamedDebugInfo(override val value: MutableList<AttrValue> = MutableList(5) { i -> AttrValue.Empty }) :
+    AttrValueList(value) {
     companion object {
         val START = 0
         val END = 1

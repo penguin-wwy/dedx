@@ -4,10 +4,10 @@ import com.dedx.dex.struct.DexNode
 import com.dedx.utils.DecodeException
 import java.lang.StringBuilder
 
-//const val SymbolType = 1
-//const val SymbolTypeIndex = 2
-//const val StringIndex = 3
-//const val NumberLiteral = 4
+// const val SymbolType = 1
+// const val SymbolTypeIndex = 2
+// const val StringIndex = 3
+// const val NumberLiteral = 4
 
 enum class SymIdentifier {
     SymbolType,

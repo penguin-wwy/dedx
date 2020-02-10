@@ -6,10 +6,8 @@ import com.dedx.dex.struct.MethodNode
 import com.dedx.dex.struct.type.BasicType
 import com.dedx.dex.struct.type.TypeBox
 import com.dedx.utils.DecodeException
-import com.dedx.utils.TypeConfliction
 import java.lang.StringBuilder
 import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
 enum class SlotType {

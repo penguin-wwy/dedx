@@ -1,9 +1,8 @@
 package com.dedx.dex.struct
 
-import com.dedx.dex.parser.EncValueParser
 import com.dedx.dex.struct.type.TypeBox
 
-class InstArgNode(val regNum: Int, val type: TypeBox, inst: InstNode? = null): AttrNode {
+class InstArgNode(val regNum: Int, val type: TypeBox, inst: InstNode? = null) : AttrNode {
 
     override val attributes: MutableMap<AttrKey, AttrValue> = HashMap()
     val user = ArrayList<InstNode>()

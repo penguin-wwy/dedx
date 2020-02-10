@@ -1,7 +1,5 @@
 package com.dedx.transform
 
-import com.dedx.dex.struct.InstNode
-
 class ReRopper(size: Int) {
     val frames = arrayOfNulls<StackFrame>(size)
 

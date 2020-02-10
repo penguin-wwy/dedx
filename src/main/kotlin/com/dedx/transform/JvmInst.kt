@@ -7,12 +7,12 @@ import com.dedx.dex.struct.DexNode
 import com.dedx.dex.struct.FieldInfo
 import com.dedx.dex.struct.MethodInfo
 import com.dedx.utils.DecodeException
+import java.util.*
+import kotlin.reflect.KClass
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
-import java.util.*
-import kotlin.reflect.KClass
 
 // extended instructions that cannot be referred to
 // representing Dalvik FILL_ARRAY_DATA instructions
@@ -23,7 +23,7 @@ const val Sparse_Switch_Payload = -3
 class LabelInst() {
     private var value: Label? = null
     var inst: JvmInst? = null
-    constructor(label: Label): this() {
+    constructor(label: Label) : this() {
         value = label
     }
 
@@ -40,12 +40,12 @@ class LabelInst() {
     override fun toString() = value?.toString() ?: ""
 }
 
-interface JvmInst: Opcodes {
+interface JvmInst : Opcodes {
     val opcodes: Int
     var label: LabelInst
     var lineNumber: Int?
 
-    fun <T : JvmInst>getAs(klass: KClass<T>): T? {
+    fun <T : JvmInst> getAs(klass: KClass<T>): T? {
         if (this::class == klass) {
             return this as T
         }
@@ -92,8 +92,13 @@ interface JvmInst: Opcodes {
             return ConstantInst(opcodes, label, constIndex).setLineNumber(lineNumber)
         }
 
-        fun CreateInvokeInst(opcodes: Int, invokeType: Int, mthIndex: Int, label: LabelInst = LabelInst(),
-                             lineNumber: Int? = null): JvmInst {
+        fun CreateInvokeInst(
+            opcodes: Int,
+            invokeType: Int,
+            mthIndex: Int,
+            label: LabelInst = LabelInst(),
+            lineNumber: Int? = null
+        ): JvmInst {
             return InvokeInst(opcodes, label, invokeType, mthIndex).setLineNumber(lineNumber)
         }
 
@@ -127,7 +132,7 @@ interface JvmInst: Opcodes {
     }
 }
 
-abstract class JvmInst2(override var label: LabelInst): JvmInst {
+abstract class JvmInst2(override var label: LabelInst) : JvmInst {
     init {
         label.inst = this
     }
@@ -144,7 +149,7 @@ abstract class JvmInst2(override var label: LabelInst): JvmInst {
     abstract fun toString(dex: DexNode): String
 }
 
-class SingleInst(override val opcodes: Int, label: LabelInst): JvmInst2(label) {
+class SingleInst(override val opcodes: Int, label: LabelInst) : JvmInst2(label) {
     override var lineNumber: Int? = null
 
     override fun visitInst(transformer: InstTransformer) {
@@ -158,7 +163,7 @@ class SingleInst(override val opcodes: Int, label: LabelInst): JvmInst2(label) {
     override fun toString(dex: DexNode) = toString()
 }
 
-class SlotInst(override val opcodes: Int, label: LabelInst, val slot: Int): JvmInst2(label) {
+class SlotInst(override val opcodes: Int, label: LabelInst, val slot: Int) : JvmInst2(label) {
     override var lineNumber: Int? = null
 
     override fun visitInst(transformer: InstTransformer) {
@@ -189,7 +194,7 @@ class SlotInst(override val opcodes: Int, label: LabelInst, val slot: Int): JvmI
     override fun toString(dex: DexNode) = toString()
 }
 
-class IntInst(override val opcodes: Int, label: LabelInst, val number: Int): JvmInst2(label) {
+class IntInst(override val opcodes: Int, label: LabelInst, val number: Int) : JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         transformer.methodVisitor().visitIntInsn(opcodes, number)
@@ -202,7 +207,7 @@ class IntInst(override val opcodes: Int, label: LabelInst, val number: Int): Jvm
     override fun toString(dex: DexNode) = toString()
 }
 
-class LiteralInst(override val opcodes: Int, label: LabelInst, val literal: Long, val type: SlotType): JvmInst2(label) {
+class LiteralInst(override val opcodes: Int, label: LabelInst, val literal: Long, val type: SlotType) : JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         when (opcodes) {
@@ -233,7 +238,7 @@ class LiteralInst(override val opcodes: Int, label: LabelInst, val literal: Long
     override fun toString(dex: DexNode) = toString()
 }
 
-class TypeInst(override val opcodes: Int, label: LabelInst, val typeString: String): JvmInst2(label) {
+class TypeInst(override val opcodes: Int, label: LabelInst, val typeString: String) : JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthVisitor = transformer.methodVisitor()
@@ -250,7 +255,7 @@ class TypeInst(override val opcodes: Int, label: LabelInst, val typeString: Stri
     override fun toString(dex: DexNode) = toString()
 }
 
-class ConstantInst(override val opcodes: Int, label: LabelInst, val constIndex: Int): JvmInst2(label) {
+class ConstantInst(override val opcodes: Int, label: LabelInst, val constIndex: Int) : JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthVisitor = transformer.methodVisitor()
@@ -266,7 +271,7 @@ class ConstantInst(override val opcodes: Int, label: LabelInst, val constIndex: 
     override fun toString(dex: DexNode) = formatString(label, opcodes, dex.getString(constIndex))
 }
 
-class InvokeInst(override val opcodes: Int, label: LabelInst, val invokeType: Int, val mthIndex: Int): JvmInst2(label) {
+class InvokeInst(override val opcodes: Int, label: LabelInst, val invokeType: Int, val mthIndex: Int) : JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthInfo = transformer.methodInfo(mthIndex)
@@ -285,7 +290,7 @@ class InvokeInst(override val opcodes: Int, label: LabelInst, val invokeType: In
     override fun toString(dex: DexNode) = formatString(label, opcodes, MethodInfo.fromDex(dex, mthIndex))
 }
 
-class JumpInst(override val opcodes: Int, label: LabelInst, var target: LabelInst): JvmInst2(label) {
+class JumpInst(override val opcodes: Int, label: LabelInst, var target: LabelInst) : JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         transformer.methodVisitor().visitJumpInsn(opcodes, target.getValueOrCreate())
@@ -298,7 +303,7 @@ class JumpInst(override val opcodes: Int, label: LabelInst, var target: LabelIns
     override fun toString(dex: DexNode) = toString()
 }
 
-class FieldInst(override val opcodes: Int, label: LabelInst, val fieldIndex: Int): JvmInst2(label) {
+class FieldInst(override val opcodes: Int, label: LabelInst, val fieldIndex: Int) : JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val fieldInfo = transformer.fieldInfo(fieldIndex)
@@ -313,8 +318,13 @@ class FieldInst(override val opcodes: Int, label: LabelInst, val fieldIndex: Int
     override fun toString(dex: DexNode) = formatString(label, opcodes, FieldInfo.fromDex(dex, fieldIndex))
 }
 
-class FillArrayDataPayloadInst(override val opcodes: Int, label: LabelInst, val slot: Int,
-                               val target: Int, val type: SlotType): JvmInst2(label) {
+class FillArrayDataPayloadInst(
+    override val opcodes: Int,
+    label: LabelInst,
+    val slot: Int,
+    val target: Int,
+    val type: SlotType
+) : JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthVisitor = transformer.methodVisitor()
@@ -326,7 +336,7 @@ class FillArrayDataPayloadInst(override val opcodes: Int, label: LabelInst, val 
         }
         putInst(mthVisitor, payload, payload.size - 1)
     }
-    
+
     private fun putInst(mthVisitor: MethodVisitor, payload: FillArrayDataPayloadDecodedInstruction, i: Int) {
         when (i) {
             in 0..5 -> mthVisitor.visitInsn(Opcodes.ICONST_0 + i)
@@ -397,8 +407,12 @@ class FillArrayDataPayloadInst(override val opcodes: Int, label: LabelInst, val 
 * otherwise throw java.lang.VerifyError: Expecting a stackmap frame
 */
 
-class PackedSwitchPayloadInst(override val opcodes: Int, label: LabelInst,
-                              val target: Int, val defaultLabel: LabelInst): JvmInst2(label) {
+class PackedSwitchPayloadInst(
+    override val opcodes: Int,
+    label: LabelInst,
+    val target: Int,
+    val defaultLabel: LabelInst
+) : JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthVisitor = transformer.methodVisitor()
@@ -416,8 +430,12 @@ class PackedSwitchPayloadInst(override val opcodes: Int, label: LabelInst,
     override fun toString(dex: DexNode) = toString()
 }
 
-class SparseSwitchPayloadInst(override val opcodes: Int, label: LabelInst,
-                              val target: Int, val defaultLabel: LabelInst): JvmInst2(label) {
+class SparseSwitchPayloadInst(
+    override val opcodes: Int,
+    label: LabelInst,
+    val target: Int,
+    val defaultLabel: LabelInst
+) : JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
         val mthVisitor = transformer.methodVisitor()
@@ -438,7 +456,7 @@ class SparseSwitchPayloadInst(override val opcodes: Int, label: LabelInst,
     override fun toString(dex: DexNode) = toString()
 }
 
-class MultiANewArrayInsn(label: LabelInst, var typeName: String, val numDimensions: Int): JvmInst2(label) {
+class MultiANewArrayInsn(label: LabelInst, var typeName: String, val numDimensions: Int) : JvmInst2(label) {
     override val opcodes: Int = Opcodes.MULTIANEWARRAY
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {
@@ -452,7 +470,7 @@ class MultiANewArrayInsn(label: LabelInst, var typeName: String, val numDimensio
     override fun toString(dex: DexNode) = toString()
 }
 
-class ShadowInst(override val opcodes: Int, label: LabelInst, val literal: Long?, val regs: IntArray): JvmInst2(label) {
+class ShadowInst(override val opcodes: Int, label: LabelInst, val literal: Long?, val regs: IntArray) : JvmInst2(label) {
     override var lineNumber: Int? = null
     override fun visitInst(transformer: InstTransformer) {}
 
@@ -504,5 +522,4 @@ class ShadowInst(override val opcodes: Int, label: LabelInst, val literal: Long?
     }
 
     override fun toString(dex: DexNode) = toString()
-
 }

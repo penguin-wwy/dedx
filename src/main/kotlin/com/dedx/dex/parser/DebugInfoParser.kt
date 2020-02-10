@@ -4,7 +4,6 @@ import com.dedx.dex.struct.*
 import com.dedx.utils.DecodeException
 import kotlin.math.min
 
-
 class DebugInfoParser(val mth: MethodNode, val insnList: Array<InstNode?>, debugOffset: Int) {
     val dex = mth.dex()
     val section = dex.openSection(debugOffset)
@@ -181,5 +180,4 @@ class DebugInfoParser(val mth: MethodNode, val insnList: Array<InstNode?>, debug
             resultList.add(variable)
         }
     }
-
 }

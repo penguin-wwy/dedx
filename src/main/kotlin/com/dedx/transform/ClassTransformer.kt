@@ -5,17 +5,19 @@ import com.dedx.dex.struct.*
 import com.dedx.tools.Configuration
 import com.dedx.tools.EmptyConfiguration
 import com.google.common.flogger.FluentLogger
+import java.io.File
+import java.io.FileOutputStream
+import java.lang.IllegalArgumentException
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.FieldVisitor
 import org.objectweb.asm.Opcodes.V1_8
-import java.io.File
-import java.io.FileOutputStream
-import java.lang.IllegalArgumentException
 
-class ClassTransformer(private val clsNode: ClassNode,
-                       val config: Configuration = EmptyConfiguration,
-                       private val filePath: String = "") {
+class ClassTransformer(
+    private val clsNode: ClassNode,
+    val config: Configuration = EmptyConfiguration,
+    private val filePath: String = ""
+) {
     val classWriter = ClassWriter(1)
     lateinit var fieldVisitor: FieldVisitor
     lateinit var annotationVisitor: AnnotationVisitor

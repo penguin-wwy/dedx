@@ -7,10 +7,8 @@ import com.android.dx.io.Opcodes
 import com.android.dx.io.instructions.DecodedInstruction
 import com.android.dx.io.instructions.ShortArrayCodeInput
 import com.dedx.dex.struct.type.BasicType
-import com.dedx.dex.struct.type.DalvikAnnotationDefault
 import com.dedx.dex.struct.type.TypeBox
 import com.dedx.dex.struct.type.isSystemCommentType
-import com.dedx.transform.SlotType
 import com.dedx.utils.DecodeException
 import java.lang.IllegalArgumentException
 import java.util.*
@@ -18,7 +16,7 @@ import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
 
-class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVirtual: Boolean): AccessInfo, AttrNode {
+class MethodNode(val parent: ClassNode, val mthData: ClassData.Method, val isVirtual: Boolean) : AccessInfo, AttrNode {
     override val accFlags = mthData.accessFlags
     override val attributes: MutableMap<AttrKey, AttrValue> = HashMap()
 

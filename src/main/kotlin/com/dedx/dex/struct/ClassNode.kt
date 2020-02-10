@@ -13,10 +13,12 @@ import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 
-class ClassNode private constructor(val parent: DexNode,
-                                    private val clsDef: ClassDef,
-                                    val clsInfo: ClassInfo,
-                                    clsData: ClassData?): AccessInfo, AttrNode {
+class ClassNode private constructor(
+    val parent: DexNode,
+    private val clsDef: ClassDef,
+    val clsInfo: ClassInfo,
+    clsData: ClassData?
+) : AccessInfo, AttrNode {
 
     override val attributes: MutableMap<AttrKey, AttrValue> = HashMap()
     override val accFlags: Int = clsDef.accessFlags
@@ -79,7 +81,6 @@ class ClassNode private constructor(val parent: DexNode,
         }
     }
 
-
     companion object {
         private val logger = FluentLogger.forEnclosingClass()
 
@@ -129,8 +130,8 @@ class ClassNode private constructor(val parent: DexNode,
             ConstStorage.processConstFields(parent, staticFields)
         }
 
-        private fun create(parent: DexNode, clsDef: ClassDef, clsInfo: ClassInfo, clsData: ClassData?)
-                = ClassNode(parent, clsDef, clsInfo, clsData)
+        private fun create(parent: DexNode, clsDef: ClassDef, clsInfo: ClassInfo, clsData: ClassData?) =
+                ClassNode(parent, clsDef, clsInfo, clsData)
     }
 
     fun load() = apply { methods.forEach { it.load() } }

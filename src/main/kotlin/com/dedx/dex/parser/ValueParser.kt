@@ -93,7 +93,7 @@ open class EncValueParser(val dex: DexNode, val section: Dex.Section) {
     private fun readByte(): Int = section.readByte().toUByte().toInt()
 }
 
-class StaticValuesParser(dex: DexNode, section: Dex.Section): EncValueParser(dex, section) {
+class StaticValuesParser(dex: DexNode, section: Dex.Section) : EncValueParser(dex, section) {
     fun processFields(fields: List<FieldNode>): Int {
         val count = Leb128.readUnsignedLeb128(section)
         for (i in 0 until count) {

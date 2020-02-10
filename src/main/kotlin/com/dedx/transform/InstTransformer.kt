@@ -9,13 +9,13 @@ import com.dedx.transform.passes.RemoveNOPPass
 import com.dedx.utils.DecodeException
 import com.dedx.utils.annotation.DepClass
 import com.google.common.flogger.FluentLogger
-import org.objectweb.asm.Label
-import org.objectweb.asm.MethodVisitor
-import org.objectweb.asm.Opcodes
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
+import org.objectweb.asm.Label
+import org.objectweb.asm.MethodVisitor
+import org.objectweb.asm.Opcodes
 
 class JumpTarget {
     var thenPos: Int? = null
@@ -43,8 +43,8 @@ class TryCatchTable {
 
     val elements = ArrayList<TCElement>()
 
-    fun addElement(startInst: JvmInst, endInst: JvmInst, catchInst: JvmInst, type: String?)
-            = elements.add(TCElement(startInst, endInst, catchInst, type))
+    fun addElement(startInst: JvmInst, endInst: JvmInst, catchInst: JvmInst, type: String?) =
+            elements.add(TCElement(startInst, endInst, catchInst, type))
 
     fun empty() = elements.isEmpty()
 
@@ -99,8 +99,8 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
     val jumpMap by lazy { HashMap<JvmInst, ArrayList<JumpInst>>() }
     val instStorage by lazy { LabelMap() }
 
-    fun addTryCatchElement(startInst: JvmInst, endInst: JvmInst, catchInst: JvmInst, type: String?)
-            = tryCatchTable.addElement(startInst, endInst, catchInst, type)
+    fun addTryCatchElement(startInst: JvmInst, endInst: JvmInst, catchInst: JvmInst, type: String?) =
+            tryCatchTable.addElement(startInst, endInst, catchInst, type)
 
     fun pushJvmInst(jvmInst: JvmInst) {
         if (jvmInst.label.getValue() != null) {

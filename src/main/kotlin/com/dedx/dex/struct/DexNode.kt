@@ -25,8 +25,8 @@ class DexNode private constructor(val dex: Dex, private val config: Configuratio
             return null
         }
 
-        @JvmStatic fun create(bytes: ByteArray, config: Configuration = EmptyConfiguration)
-                = DexNode(Dex(bytes), config)
+        @JvmStatic fun create(bytes: ByteArray, config: Configuration = EmptyConfiguration) =
+                DexNode(Dex(bytes), config)
     }
 
     fun loadClass() {

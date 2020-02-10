@@ -10,10 +10,10 @@ import com.dedx.dex.struct.type.BasicType
 import com.dedx.utils.DecodeException
 import com.dedx.utils.TypeConfliction
 import com.google.common.flogger.FluentLogger
-import org.objectweb.asm.Label
-import org.objectweb.asm.MethodVisitor
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
+import org.objectweb.asm.Label
+import org.objectweb.asm.MethodVisitor
 
 object InvokeType {
     val INVOKEVIRTUAL = 182 // visitMethodInsn
@@ -68,7 +68,6 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             }
             annoVisitor.visitEnd()
         }
-
 
         val paramAnnoVisit = fun(avs: AttrValueList, i: Int) {
             for (value in avs) {
@@ -287,32 +286,32 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         jvmInstManager.pushJvmInst(jvmInst)
         currentInstList.add(jvmInst)
     }
-    private fun pushLiteralInst(opcodes: Int, literal: Long, type: SlotType){
+    private fun pushLiteralInst(opcodes: Int, literal: Long, type: SlotType) {
         val jvmInst = JvmInst.CreateLiteralInst(opcodes, literal, type, getStartJvmLabelInst(), getStartJvmLine())
         jvmInstManager.pushJvmInst(jvmInst)
         currentInstList.add(jvmInst)
     }
-    private fun pushTypeInst(opcodes: Int, type: String){
+    private fun pushTypeInst(opcodes: Int, type: String) {
         val jvmInst = JvmInst.CreateTypeInst(opcodes, type, getStartJvmLabelInst(), getStartJvmLine())
         jvmInstManager.pushJvmInst(jvmInst)
         currentInstList.add(jvmInst)
     }
-    private fun pushConstantInst(opcodes: Int, constIndex: Int){
+    private fun pushConstantInst(opcodes: Int, constIndex: Int) {
         val jvmInst = JvmInst.CreateConstantInst(opcodes, constIndex, getStartJvmLabelInst(), getStartJvmLine())
         jvmInstManager.pushJvmInst(jvmInst)
         currentInstList.add(jvmInst)
     }
-    private fun pushInvokeInst(invokeType: Int, mthIndex: Int){
+    private fun pushInvokeInst(invokeType: Int, mthIndex: Int) {
         val jvmInst = JvmInst.CreateInvokeInst(invokeType, invokeType, mthIndex, getStartJvmLabelInst(), getStartJvmLine())
         jvmInstManager.pushJvmInst(jvmInst)
         currentInstList.add(jvmInst)
     }
-    private fun pushJumpInst(opcodes: Int, target: Label){
+    private fun pushJumpInst(opcodes: Int, target: Label) {
         val jvmInst = JvmInst.CreateJumpInst(opcodes, LabelInst(target), getStartJvmLabelInst(), getStartJvmLine())
         jvmInstManager.pushJvmInst(jvmInst)
         currentInstList.add(jvmInst)
     }
-    private fun pushFieldInst(opcodes: Int, fieldIndex: Int){
+    private fun pushFieldInst(opcodes: Int, fieldIndex: Int) {
         val jvmInst = JvmInst.CreateFieldInst(opcodes, fieldIndex, getStartJvmLabelInst(), getStartJvmLine())
         jvmInstManager.pushJvmInst(jvmInst)
         currentInstList.add(jvmInst)
@@ -324,22 +323,22 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         currentInstList.add(shadowInst)
         return shadowInst
     }
-    private fun pushFillArrayDataPayloadInst(slot: Int, target: Int, type: SlotType){
+    private fun pushFillArrayDataPayloadInst(slot: Int, target: Int, type: SlotType) {
         val jvmInst = JvmInst.CreateFillArrayDataPayloadInst(slot, target, type, getStartJvmLabelInst(), getStartJvmLine())
         jvmInstManager.pushJvmInst(jvmInst)
         currentInstList.add(jvmInst)
     }
-    private fun pushPackedSwitchPayloadInst(target: Int, defLabel: Label){
+    private fun pushPackedSwitchPayloadInst(target: Int, defLabel: Label) {
         val jvmInst = JvmInst.CreatePackedSwitchPayloadInst(target, LabelInst(defLabel), getStartJvmLabelInst(), getStartJvmLine())
         jvmInstManager.pushJvmInst(jvmInst)
         currentInstList.add(jvmInst)
     }
-    private fun pushSparseSwitchPayloadInst(target: Int, defLabel: Label){
+    private fun pushSparseSwitchPayloadInst(target: Int, defLabel: Label) {
         val jvmInst = JvmInst.CreateSparseSwitchPayloadInst(target, LabelInst(defLabel), getStartJvmLabelInst(), getStartJvmLine())
         jvmInstManager.pushJvmInst(jvmInst)
         currentInstList.add(jvmInst)
     }
-    private fun pushMultiANewArrayInsn(typeName: String, num: Int){
+    private fun pushMultiANewArrayInsn(typeName: String, num: Int) {
         val jvmInst = JvmInst.CreateMultiANewArrayInsn(typeName, num, getStartJvmLabelInst(), getStartJvmLine())
         jvmInstManager.pushJvmInst(jvmInst)
         currentInstList.add(jvmInst)
@@ -705,7 +704,6 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             pushJumpInst(jvmOpcodes.GOTO, target)
             StackFrame.getFrameOrPut(dalvikInst.target).addPreFrame(offset)
         }
-
     }
 
     private fun visitInstanceField(dalvikInst: TwoRegisterDecodedInstruction, frame: StackFrame, offset: Int) {
@@ -1051,7 +1049,6 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
             }
             visitStore(SlotType.INT, regA, frame)
         } catch (ex: Exception) {
-
         }
     }
 
@@ -1065,7 +1062,6 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
                 pushSingleInst(jvmOpcodes.MONITOREXIT)
             }
         } catch (ex: Exception) {
-
         }
     }
 
@@ -1083,7 +1079,7 @@ class MethodTransformer(val mthNode: MethodNode, private val clsTransformer: Cla
         val mthInfo = MethodInfo.fromDex(dexNode, nextInst.instruction.index)
         val nextFrame = StackFrame.getFrameOrExcept(nextInst.cursor).merge()
         // constructor ignore this pointer
-        for(i in 1 until nextInst.instruction.registerCount) {
+        for (i in 1 until nextInst.instruction.registerCount) {
             when (i) {
                 1 -> visitLoad(nextInst.instruction.regB(), SlotType.convert(mthInfo.args[i - 1])!!, nextInst.cursor)
                 2 -> visitLoad(nextInst.instruction.regC(), SlotType.convert(mthInfo.args[i - 1])!!, nextInst.cursor)

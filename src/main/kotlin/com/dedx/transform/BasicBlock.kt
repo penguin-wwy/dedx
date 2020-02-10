@@ -1,13 +1,12 @@
 package com.dedx.transform
 
 import com.dedx.dex.struct.InstNode
-import com.dedx.utils.BlockEmptyException
 import org.objectweb.asm.Label
 
 class BasicBlock constructor(val startLable: Label, val predecessor: ArrayList<BasicBlock>, val successor: ArrayList<BasicBlock>) {
 
-    constructor(startLable: Label, predecessor: ArrayList<BasicBlock>, successor: ArrayList<BasicBlock>, cursor: Int)
-            : this(startLable, predecessor, successor) {
+    constructor(startLable: Label, predecessor: ArrayList<BasicBlock>, successor: ArrayList<BasicBlock>, cursor: Int) :
+            this(startLable, predecessor, successor) {
         firstCursor = cursor
     }
 

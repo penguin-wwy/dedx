@@ -5,7 +5,6 @@ import com.dedx.dex.struct.DexNode
 import com.dedx.transform.ClassTransformer
 import com.dedx.utils.DecodeException
 import com.google.common.flogger.FluentLogger
-import org.apache.commons.cli.*
 import java.io.File
 import java.io.FileReader
 import java.lang.RuntimeException
@@ -14,6 +13,7 @@ import java.util.logging.FileHandler
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.system.exitProcess
+import org.apache.commons.cli.*
 
 fun configLog() {
     val root = Logger.getLogger("")

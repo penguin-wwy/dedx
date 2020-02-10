@@ -2,7 +2,6 @@ package com.dedx.transform.passes
 
 import com.dedx.transform.InstTransformer
 import com.dedx.transform.JumpInst
-import com.dedx.transform.JvmInst
 
 object InstAnalysisPass : Pass {
     override fun initializaPass() { }

@@ -1,9 +1,8 @@
 package com.dedx.dex.struct
 
-import com.dedx.dex.parser.EncValueParser
 import com.dedx.dex.struct.type.TypeBox
-import org.objectweb.asm.Label
 import java.util.*
+import org.objectweb.asm.Label
 
 object Enc {
     const val ENC_LABEL = -4

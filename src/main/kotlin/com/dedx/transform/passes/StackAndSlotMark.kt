@@ -1,7 +1,6 @@
 package com.dedx.transform.passes
 
 import com.dedx.transform.InstTransformer
-import org.objectweb.asm.Opcodes
 
 object StackAndSlotMark : Pass {
     override fun initializaPass() { }
