@@ -4,7 +4,8 @@ import com.dedx.dex.struct.DexNode
 import com.dedx.tools.EmptyConfiguration
 import com.dedx.transform.ClassTransformer
 import com.dedx.transform.MethodTransformer
-import org.junit.Assert.*
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CFGBuildPassTest {

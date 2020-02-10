@@ -1,6 +1,6 @@
 package com.dedx.dex.struct
 
-import java.util.*
+import java.util.TreeSet
 import kotlin.collections.ArrayList
 
 class ExceptionHandler(var handlerBlock: TryCatchBlock, val addr: Int, type: ClassInfo?) {

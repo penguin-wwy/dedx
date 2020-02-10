@@ -7,13 +7,15 @@ import com.dedx.utils.DecodeException
 import com.google.common.flogger.FluentLogger
 import java.io.File
 import java.io.FileReader
-import java.lang.RuntimeException
 import java.util.logging.ConsoleHandler
 import java.util.logging.FileHandler
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.system.exitProcess
-import org.apache.commons.cli.*
+import org.apache.commons.cli.DefaultParser
+import org.apache.commons.cli.HelpFormatter
+import org.apache.commons.cli.Option
+import org.apache.commons.cli.Options
 
 fun configLog() {
     val root = Logger.getLogger("")

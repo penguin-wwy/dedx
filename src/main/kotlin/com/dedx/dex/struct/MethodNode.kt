@@ -11,7 +11,6 @@ import com.dedx.dex.struct.type.TypeBox
 import com.dedx.dex.struct.type.isSystemCommentType
 import com.dedx.utils.DecodeException
 import java.lang.IllegalArgumentException
-import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet

@@ -5,7 +5,7 @@ import com.dedx.transform.JvmInst
 import com.dedx.transform.SingleInst
 import org.objectweb.asm.Opcodes
 
-object RemoveNOPPass : Pass {
+object RemoveNOP : Pass {
     override fun initializaPass() { }
 
     override fun runOnFunction(instTrans: InstTransformer) {

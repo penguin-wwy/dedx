@@ -3,16 +3,14 @@ package com.dedx.transform
 import com.dedx.dex.struct.FieldInfo
 import com.dedx.dex.struct.MethodInfo
 import com.dedx.tools.Configuration
-import com.dedx.transform.passes.EliminateCodePass
-import com.dedx.transform.passes.InstAnalysisPass
-import com.dedx.transform.passes.RemoveNOPPass
+import com.dedx.transform.passes.EliminateCode
+import com.dedx.transform.passes.InstAnalysis
+import com.dedx.transform.passes.RemoveNOP
 import com.dedx.utils.DecodeException
-import com.dedx.utils.annotation.DepClass
+import com.dedx.utils.annotation.DepAnnotation
 import com.google.common.flogger.FluentLogger
-import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.collections.HashSet
+import java.util.LinkedList
+import java.util.Stack
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
@@ -113,7 +111,7 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
         jvmInstList.add(jvmInst)
     }
 
-    @DepClass(InstAnalysisPass::class, "runOnFunction", true)
+    @DepAnnotation(InstAnalysis::class, "runOnFunction", true)
     fun removeJvmInst(jvmInst: JvmInst) {
         val next = jvmInstList.listIterator(jvmInstList.indexOf(jvmInst) + 1).next()
         jumpMap[jvmInst]?.also {
@@ -140,9 +138,9 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
     fun visitJvmInst(configuration: Configuration) {
 //        eliminateShadowInst()
         if (configuration.optLevel == Configuration.NormalOpt) {
-            InstAnalysisPass.runOnFunction(this)
-            RemoveNOPPass.runOnFunction(this)
-            EliminateCodePass.runOnFunction(this)
+            InstAnalysis.runOnFunction(this)
+            RemoveNOP.runOnFunction(this)
+            EliminateCode.runOnFunction(this)
         }
         for (jvmInst in jvmInstList) {
             jvmInst.visitLabel(this)

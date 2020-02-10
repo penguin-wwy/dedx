@@ -1,7 +1,8 @@
 package com.dedx.dex.struct
 
 import com.dedx.dex.struct.type.TypeBox
-import java.util.*
+import java.util.Collections
+import kotlin.collections.ArrayList
 import org.objectweb.asm.Label
 
 object Enc {

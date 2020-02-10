@@ -1,17 +1,26 @@
 package com.dedx.transform
 
 import com.android.dx.io.Opcodes
-import com.android.dx.io.instructions.*
+import com.android.dx.io.instructions.DecodedInstruction
+import com.android.dx.io.instructions.OneRegisterDecodedInstruction
+import com.android.dx.io.instructions.RegisterRangeDecodedInstruction
+import com.android.dx.io.instructions.ThreeRegisterDecodedInstruction
+import com.android.dx.io.instructions.TwoRegisterDecodedInstruction
+import com.android.dx.io.instructions.ZeroRegisterDecodedInstruction
 import com.dedx.dex.pass.CFGBuildPass
 import com.dedx.dex.pass.DataFlowAnalysisPass
 import com.dedx.dex.pass.DataFlowMethodInfo
-import com.dedx.dex.struct.*
+import com.dedx.dex.struct.AttrKey
+import com.dedx.dex.struct.AttrValueList
+import com.dedx.dex.struct.DexNode
+import com.dedx.dex.struct.FieldInfo
+import com.dedx.dex.struct.InstNode
+import com.dedx.dex.struct.MethodInfo
+import com.dedx.dex.struct.MethodNode
 import com.dedx.dex.struct.type.BasicType
 import com.dedx.utils.DecodeException
 import com.dedx.utils.TypeConfliction
 import com.google.common.flogger.FluentLogger
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 

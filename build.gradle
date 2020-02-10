@@ -86,7 +86,7 @@ task ktlint(type: JavaExec, group: "verification") {
     args = [
             "--reporter=plain",
             "--reporter=checkstyle,output=${outputFile}",
-            "src/**/*.kt"
+            "src/main/**/*.kt"
     ]
 }
 check.dependsOn ktlint

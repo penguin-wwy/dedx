@@ -9,7 +9,7 @@ import com.dedx.tools.Configuration
 import com.dedx.utils.DecodeException
 import com.google.common.flogger.FluentLogger
 import java.lang.Exception
-import java.util.*
+import java.util.Collections
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 

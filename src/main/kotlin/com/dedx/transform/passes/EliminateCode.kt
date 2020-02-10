@@ -3,10 +3,9 @@ package com.dedx.transform.passes
 import com.dedx.transform.InstTransformer
 import com.dedx.transform.JvmInst
 import com.dedx.transform.SlotInst
-import java.util.*
-import kotlin.collections.ArrayList
+import java.util.Stack
 
-object EliminateCodePass : Pass {
+object EliminateCode : Pass {
     override fun initializaPass() { }
 
     override fun runOnFunction(instTrans: InstTransformer) {

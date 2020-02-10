@@ -1,6 +1,10 @@
 package com.dedx.dex.parser
 
-import com.dedx.dex.struct.*
+import com.dedx.dex.struct.DexNode
+import com.dedx.dex.struct.InstArgNode
+import com.dedx.dex.struct.InstNode
+import com.dedx.dex.struct.LocalVarNode
+import com.dedx.dex.struct.MethodNode
 import com.dedx.utils.DecodeException
 import kotlin.math.min
 

@@ -6,9 +6,7 @@ import com.dedx.dex.struct.MethodNode
 import com.dedx.dex.struct.type.BasicType
 import com.dedx.dex.struct.type.TypeBox
 import com.dedx.utils.DecodeException
-import java.lang.StringBuilder
-import java.util.*
-import kotlin.collections.HashMap
+import java.util.TreeSet
 
 enum class SlotType {
     BOOLEAN,

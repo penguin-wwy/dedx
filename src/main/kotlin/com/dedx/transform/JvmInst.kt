@@ -7,7 +7,7 @@ import com.dedx.dex.struct.DexNode
 import com.dedx.dex.struct.FieldInfo
 import com.dedx.dex.struct.MethodInfo
 import com.dedx.utils.DecodeException
-import java.util.*
+import java.util.ArrayList
 import kotlin.reflect.KClass
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor

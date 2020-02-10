@@ -1,13 +1,15 @@
 package com.dedx.transform
 
 import com.android.dx.rop.code.AccessFlags
-import com.dedx.dex.struct.*
+import com.dedx.dex.struct.AttrKey
+import com.dedx.dex.struct.ClassInfo
+import com.dedx.dex.struct.ClassNode
+import com.dedx.dex.struct.FieldNode
 import com.dedx.tools.Configuration
 import com.dedx.tools.EmptyConfiguration
 import com.google.common.flogger.FluentLogger
 import java.io.File
 import java.io.FileOutputStream
-import java.lang.IllegalArgumentException
 import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.FieldVisitor

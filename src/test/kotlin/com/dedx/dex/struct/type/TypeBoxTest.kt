@@ -1,6 +1,6 @@
 package com.dedx.dex.struct.type
 
-import org.junit.Assert.*
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TypeBoxTest {

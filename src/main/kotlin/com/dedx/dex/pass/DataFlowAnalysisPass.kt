@@ -7,9 +7,10 @@ import com.dedx.transform.MethodTransformer
 import com.dedx.utils.BitArray
 import com.dedx.utils.BlockEmptyException
 import com.dedx.utils.DataFlowAnalyzeException
-import java.util.*
+import java.util.Collections
 import java.util.stream.Collectors
 import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 open class DataFlowMethodInfo(val mthTransformer: MethodTransformer) {
     val blockInfos = HashMap<BasicBlock, DataFlowBlockInfo>()
@@ -42,7 +43,7 @@ object DataFlowAnalysisPass {
 
     fun usedefAnalysis(dfMethodInfo: DataFlowMethodInfo) {
         for (entry in dfMethodInfo.getBlockInfos()) {
-            DataFlowAnalysisPass.usedefAnalysis(entry)
+            usedefAnalysis(entry)
         }
     }
 

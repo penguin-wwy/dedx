@@ -6,9 +6,9 @@ import org.junit.Assert.*
 import org.junit.Test
 import org.objectweb.asm.Opcodes
 
-class RemoveNOPPassTest {
+class EliminateCodeTest {
 
-    private fun createNOPInstTrans(): InstTransformer {
+    private fun createLoadAndStoreInstTrans(): InstTransformer {
         val instTransformer = InstTransformer(MethodTransformer(EmptyResource.emptyMethodNode, ClassTransformer(EmptyResource.classNode)))
         instTransformer.pushJvmInst(JvmInst.CreateSlotInst(Opcodes.ISTORE, 0))
         instTransformer.pushJvmInst(JvmInst.CreateSingleInst(Opcodes.NOP))
@@ -18,11 +18,10 @@ class RemoveNOPPassTest {
         instTransformer.pushJvmInst(JvmInst.CreateSlotInst(Opcodes.ISTORE, 0))
         return instTransformer
     }
-
     @Test
-    fun testRemoveNOP() {
-        val instTransformer = createNOPInstTrans()
-        RemoveNOPPass.runOnFunction(instTransformer)
-        assertEquals(5, instTransformer.instListSize())
+    fun testEliminateLoadAndStore() {
+        val instTransformer = createLoadAndStoreInstTrans()
+        EliminateCode.runOnFunction(instTransformer)
+        assertEquals(4, instTransformer.instListSize())
     }
 }

@@ -2,7 +2,8 @@ package com.dedx.dex.struct
 
 import com.dedx.dex.struct.type.ObjectType
 import com.dedx.dex.struct.type.TypeBox
-import org.junit.Assert.*
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ClassInfoTest {

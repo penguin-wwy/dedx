@@ -2,7 +2,9 @@ package com.dedx.dex.parser
 
 import com.android.dex.Dex
 import com.android.dex.Leb128
-import com.dedx.dex.struct.*
+import com.dedx.dex.struct.AttrKey
+import com.dedx.dex.struct.AttrValue
+import com.dedx.dex.struct.DexNode
 import com.dedx.dex.struct.Enc.ENC_ANNOTATION
 import com.dedx.dex.struct.Enc.ENC_ARRAY
 import com.dedx.dex.struct.Enc.ENC_BOOLEAN
@@ -19,6 +21,9 @@ import com.dedx.dex.struct.Enc.ENC_NULL
 import com.dedx.dex.struct.Enc.ENC_SHORT
 import com.dedx.dex.struct.Enc.ENC_STRING
 import com.dedx.dex.struct.Enc.ENC_TYPE
+import com.dedx.dex.struct.FieldInfo
+import com.dedx.dex.struct.FieldNode
+import com.dedx.dex.struct.MethodInfo
 import com.dedx.utils.DecodeException
 
 open class EncValueParser(val dex: DexNode, val section: Dex.Section) {

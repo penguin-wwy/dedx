@@ -1,8 +1,14 @@
 package com.dedx.dex.parser
 
 import com.android.dex.Dex
-import com.dedx.dex.struct.*
 import com.dedx.dex.struct.Annotation
+import com.dedx.dex.struct.AttrKey
+import com.dedx.dex.struct.AttrValue
+import com.dedx.dex.struct.AttrValueList
+import com.dedx.dex.struct.ClassNode
+import com.dedx.dex.struct.DexNode
+import com.dedx.dex.struct.Enc
+import com.dedx.dex.struct.Visibility
 import com.dedx.utils.DecodeException
 import com.google.common.flogger.FluentLogger
 

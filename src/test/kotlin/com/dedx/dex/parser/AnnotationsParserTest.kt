@@ -2,7 +2,7 @@ package com.dedx.dex.parser
 
 import com.dedx.dex.struct.AttrKey
 import com.dedx.dex.struct.DexNode
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class AnnotationsParserTest {

@@ -1,6 +1,6 @@
 package com.dedx.dex.struct
 
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class MethodNodeTest {
