@@ -16,6 +16,10 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    ktlint
+}
+
 dependencies {
     compile files('lib/dx.jar')
     compile group: 'org.ow2.asm', name: 'asm', version: '7.1'
@@ -28,6 +32,8 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     compile localGroovy()
+
+    ktlint "com.pinterest:ktlint:0.36.0"
 }
 
 compileJava {
@@ -68,3 +74,19 @@ task runTest(type: JavaExec) {
 application {
     mainClassName = 'com.dedx.tools.MainKt'
 }
+
+def outputDir = "${project.buildDir}/reports/ktlint/"
+def outputFile = "${outputDir}ktlint-checkstyle-report.xml"
+
+task ktlint(type: JavaExec, group: "verification") {
+    group = "verification"
+    description = "Runs ktlint."
+    main = "com.pinterest.ktlint.Main"
+    classpath = project.configurations.ktlint
+    args = [
+            "--reporter=plain",
+            "--reporter=checkstyle,output=${outputFile}",
+            "src/**/*.kt"
+    ]
+}
+check.dependsOn ktlint
