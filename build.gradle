@@ -1,9 +1,16 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+}
+
 plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm' version '1.3.50'
     id 'groovy'
     id 'application'
     id 'distribution'
+    id "io.gitlab.arturbosch.detekt" version "1.6.0"
 }
 
 apply plugin: com.github.dedx.DepInjectPlugin
@@ -14,6 +21,7 @@ sourceCompatibility = 1.8
 repositories {
     mavenLocal()
     mavenCentral()
+    jcenter()
 }
 
 configurations {
@@ -101,3 +109,26 @@ task ktlineFormat(type: JavaExec, group: "formatting") {
             "src/main/**/*.kt"
     ]
 }
+
+detekt {
+    failFast = true // fail build on any finding
+    buildUponDefaultConfig = true // preconfigure defaults
+    config = files("$projectDir/config/detekt.yml") // point to your custom config defining rules to run, overwriting default behavior
+
+    reports {
+        xml {
+            enabled = true                                // Enable/Disable XML report (default: true)
+            destination = file("${project.buildDir}/reports/detekt.xml")
+        }
+        html {
+            enabled = true                                // Enable/Disable HTML report (default: true)
+            destination = file("${project.buildDir}/reports/detekt.html")
+        }
+        txt {
+            enabled = true
+            destination = file("${project.buildDir}/reports/detekt.txt")
+        }
+    }
+}
+
+tasks.detekt.jvmTarget = "1.8"
