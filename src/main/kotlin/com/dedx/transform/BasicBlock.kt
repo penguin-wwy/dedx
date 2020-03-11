@@ -3,7 +3,11 @@ package com.dedx.transform
 import com.dedx.dex.struct.InstNode
 import org.objectweb.asm.Label
 
-class BasicBlock constructor(val startLable: Label, val predecessor: ArrayList<BasicBlock>, val successor: ArrayList<BasicBlock>) {
+class BasicBlock constructor(
+    val startLable: Label,
+    val predecessor: ArrayList<BasicBlock>,
+    val successor: ArrayList<BasicBlock>
+) {
 
     constructor(startLable: Label, predecessor: ArrayList<BasicBlock>, successor: ArrayList<BasicBlock>, cursor: Int) :
             this(startLable, predecessor, successor) {

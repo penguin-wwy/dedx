@@ -78,7 +78,9 @@ open class AttrValue(val mark: Int, open val value: Any?) {
     fun getAsAttrValueList() = if (this is AttrValueList) this else null
 }
 
-open class AttrValueList(override val value: List<AttrValue> = ArrayList()) : AttrValue(Enc.ENC_ARRAY, value), Iterable<AttrValue> {
+open class AttrValueList(
+    override val value: List<AttrValue> = ArrayList()
+) : AttrValue(Enc.ENC_ARRAY, value), Iterable<AttrValue> {
     companion object {
         val EMPTY = AttrValueList(Collections.emptyList())
     }

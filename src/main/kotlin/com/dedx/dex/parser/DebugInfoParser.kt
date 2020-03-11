@@ -18,22 +18,22 @@ class DebugInfoParser(val mth: MethodNode, val insnList: Array<InstNode?>, debug
     val resultList = ArrayList<LocalVarNode>()
 
     companion object {
-        private val DBG_END_SEQUENCE = 0x00
-        private val DBG_ADVANCE_PC = 0x01
-        private val DBG_ADVANCE_LINE = 0x02
-        private val DBG_START_LOCAL = 0x03
-        private val DBG_START_LOCAL_EXTENDED = 0x04
-        private val DBG_END_LOCAL = 0x05
-        private val DBG_RESTART_LOCAL = 0x06
-        private val DBG_SET_PROLOGUE_END = 0x07
-        private val DBG_SET_EPILOGUE_BEGIN = 0x08
-        private val DBG_SET_FILE = 0x09
+        private const val DBG_END_SEQUENCE = 0x00
+        private const val DBG_ADVANCE_PC = 0x01
+        private const val DBG_ADVANCE_LINE = 0x02
+        private const val DBG_START_LOCAL = 0x03
+        private const val DBG_START_LOCAL_EXTENDED = 0x04
+        private const val DBG_END_LOCAL = 0x05
+        private const val DBG_RESTART_LOCAL = 0x06
+        private const val DBG_SET_PROLOGUE_END = 0x07
+        private const val DBG_SET_EPILOGUE_BEGIN = 0x08
+        private const val DBG_SET_FILE = 0x09
         // the smallest special opcode
-        private val DBG_FIRST_SPECIAL = 0x0a
+        private const val DBG_FIRST_SPECIAL = 0x0a
         // the smallest line number increment
-        private val DBG_LINE_BASE = -4
+        private const val DBG_LINE_BASE = -4
         // the number of line increments represented
-        private val DBG_LINE_RANGE = 15
+        private const val DBG_LINE_RANGE = 15
     }
 
     fun process(): List<LocalVarNode> {

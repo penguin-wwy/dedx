@@ -83,7 +83,8 @@ object DataFlowAnalysisPass {
                 val currBlockInfo = dfMethodInfo.getBlockInfo(block)
                         ?: throw BlockEmptyException("Computer liveness with empty block info")
                 currBlockInfo.liveOut = BitArray.merge(succList)
-                currBlockInfo.liveIn = BitArray.merge(currBlockInfo.use, BitArray.sub(currBlockInfo.liveOut!!, currBlockInfo.def))
+                currBlockInfo.liveIn = BitArray.merge(
+                    currBlockInfo.use, BitArray.sub(currBlockInfo.liveOut!!, currBlockInfo.def))
             }
         } while (beChange())
     }

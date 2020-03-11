@@ -22,8 +22,8 @@ class ClassNode private constructor(
 
     override val attributes: MutableMap<AttrKey, AttrValue> = HashMap()
     override val accFlags: Int = clsDef.accessFlags
-    val interfaces: Array<ObjectType> = Array(clsDef.interfaces.size) {
-        i -> parent.getType(clsDef.interfaces[i].toInt()).getAsObjectType() ?: throw DecodeException("Interface type error.")
+    val interfaces: Array<ObjectType> = Array(clsDef.interfaces.size) { i ->
+        parent.getType(clsDef.interfaces[i].toInt()).getAsObjectType() ?: throw DecodeException("Interface type error.")
     }
     val methods: List<MethodNode> = addMethods(this, clsData)
     val fields: List<FieldNode> = addFields(this, clsDef, clsData)
@@ -69,11 +69,13 @@ class ClassNode private constructor(
 
         fun create(): ClassNode? {
             val clsInfo: ClassInfo = ClassInfo.fromDex(parent, clsDef.typeIndex)
-            if (configuration.blackClasses.isNotEmpty() && configuration.blackClasses.find { clsInfo.fullName.startsWith(it) } != null) {
+            if (configuration.blackClasses.isNotEmpty() &&
+                configuration.blackClasses.find { clsInfo.fullName.startsWith(it) } != null) {
                 logger.atInfo().log("Class skip by hit black classes list [$clsInfo]")
                 return null
             }
-            if (configuration.classesList.isNotEmpty() && configuration.classesList.find { clsInfo.fullName.startsWith(it) } == null) {
+            if (configuration.classesList.isNotEmpty() &&
+                configuration.classesList.find { clsInfo.fullName.startsWith(it) } == null) {
                 logger.atInfo().log("Class skip by no hit classes list [$clsInfo]")
                 return null
             }
@@ -131,7 +133,7 @@ class ClassNode private constructor(
         }
 
         private fun create(parent: DexNode, clsDef: ClassDef, clsInfo: ClassInfo, clsData: ClassData?) =
-                ClassNode(parent, clsDef, clsInfo, clsData)
+            ClassNode(parent, clsDef, clsInfo, clsData)
     }
 
     fun load() = apply { methods.forEach { it.load() } }

@@ -204,10 +204,8 @@ class InstTransformer(val mthTransformer: MethodTransformer) {
                     if (inst is ShadowInst) {
                         // TODO
                     }
-                    if (inst is SlotInst) {
-                        if (inst.slot in slots) {
-                            return inst.getExprType()
-                        }
+                    if (inst is SlotInst && inst.slot in slots) {
+                        return inst.getExprType()
                     }
                     when (inst.opcodes) {
                         in Opcodes.IRETURN..Opcodes.RETURN, Opcodes.ATHROW -> break@loop
